@@ -60,7 +60,7 @@ export const ActionCreators = {
   }
 };
 
-const INIT_ACTION = { type: '@@INIT' };
+export const INIT_ACTION = { type: '@@INIT' };
 
 /**
  * Computes the next entry in the log by applying an action.
@@ -137,14 +137,14 @@ function recomputeStates(
 /**
  * Lifts an app's action into an action on the lifted store.
  */
-function liftAction(action) {
+export function liftAction(action) {
   return ActionCreators.performAction(action);
 }
 
 /**
  * Creates a history state reducer from an app's reducer.
  */
-function liftReducerWith(reducer, initialCommittedState, monitorReducer, options) {
+export function liftReducerWith(reducer, initialCommittedState, monitorReducer, options) {
   const initialLiftedState = {
     monitorState: monitorReducer(undefined, {}),
     nextActionId: 1,
@@ -371,7 +371,7 @@ function liftReducerWith(reducer, initialCommittedState, monitorReducer, options
 /**
  * Provides an app's view into the state of the lifted store.
  */
-function unliftState(liftedState) {
+export function unliftState(liftedState) {
   const { computedStates, currentStateIndex } = liftedState;
   const { state } = computedStates[currentStateIndex];
   return state;
@@ -380,7 +380,7 @@ function unliftState(liftedState) {
 /**
  * Provides an app's view into the lifted store.
  */
-function unliftStore(liftedStore, liftReducer) {
+export function unliftStore(liftedStore, liftReducer) {
   let lastDefinedState;
 
   return {
