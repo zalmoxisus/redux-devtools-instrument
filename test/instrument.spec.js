@@ -211,6 +211,19 @@ describe('instrument', () => {
     );
   });
 
+  it('should catch invalid action type', () => {
+    function ActionClass() {
+      this.type = 'test';
+    }
+
+    expect(() => {
+      store.dispatch(new ActionClass());
+    }).toThrow(
+      'Actions must be plain objects. ' +
+      'Use custom middleware for async actions.'
+    );
+  });
+
   it('should return the last non-undefined state from getState', () => {
     let storeWithBug = createStore(counterWithBug, instrument());
     storeWithBug.dispatch({ type: 'INCREMENT' });

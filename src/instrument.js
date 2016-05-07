@@ -1,5 +1,6 @@
 import difference from 'lodash/difference';
 import union from 'lodash/union';
+import isPlainObject from 'lodash/isPlainObject';
 
 export const ActionTypes = {
   PERFORM_ACTION: 'PERFORM_ACTION',
@@ -18,12 +19,20 @@ export const ActionTypes = {
  */
 export const ActionCreators = {
   performAction(action) {
+    if (!isPlainObject(action)) {
+      throw new Error(
+        'Actions must be plain objects. ' +
+        'Use custom middleware for async actions.'
+      );
+    }
+
     if (typeof action.type === 'undefined') {
       throw new Error(
         'Actions may not have an undefined "type" property. ' +
         'Have you misspelled a constant?'
       );
     }
+
     return { type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now() };
   },
 
