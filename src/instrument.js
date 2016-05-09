@@ -169,7 +169,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
   /**
    * Manages how the history actions modify the history state.
    */
-  return (liftedState = initialLiftedState, liftedAction) => {
+  return (liftedState, liftedAction) => {
     let {
       monitorState,
       actionsById,
@@ -179,7 +179,12 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       currentStateIndex,
       computedStates
-    } = liftedState;
+    } = liftedState || initialLiftedState;
+
+    if (!liftedState) {
+      // Prevent mutating initialLiftedState
+      actionsById = { ...actionsById };
+    }
 
     function commitExcessActions(n) {
       // Auto-commits n-number of excess actions.
