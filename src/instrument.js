@@ -1,6 +1,7 @@
 import difference from 'lodash/difference';
 import union from 'lodash/union';
 import isPlainObject from 'lodash/isPlainObject';
+import $$observable from 'symbol-observable';
 
 export const ActionTypes = {
   PERFORM_ACTION: 'PERFORM_ACTION',
@@ -392,6 +393,14 @@ export function unliftState(liftedState) {
 export function unliftStore(liftedStore, liftReducer) {
   let lastDefinedState;
 
+  function getState() {
+    const state = unliftState(liftedStore.getState());
+    if (state !== undefined) {
+      lastDefinedState = state;
+    }
+    return lastDefinedState;
+  }
+
   return {
     ...liftedStore,
 
@@ -402,16 +411,31 @@ export function unliftStore(liftedStore, liftReducer) {
       return action;
     },
 
-    getState() {
-      const state = unliftState(liftedStore.getState());
-      if (state !== undefined) {
-        lastDefinedState = state;
-      }
-      return lastDefinedState;
-    },
+    getState,
 
     replaceReducer(nextReducer) {
       liftedStore.replaceReducer(liftReducer(nextReducer));
+    },
+
+    [$$observable]() {
+      return {
+        ...liftedStore[$$observable](),
+        subscribe(observer) {
+          if (typeof observer !== 'object') {
+            throw new TypeError('Expected the observer to be an object.');
+          }
+
+          function observeState() {
+            if (observer.next) {
+              observer.next(getState());
+            }
+          }
+
+          observeState();
+          const unsubscribe = liftedStore.subscribe(observeState);
+          return { unsubscribe };
+        }
+      };
     }
   };
 }
