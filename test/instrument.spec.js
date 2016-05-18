@@ -579,4 +579,14 @@ describe('instrument', () => {
       'Check your store configuration.'
     );
   });
+
+  it('should track performance', () => {
+    store.dispatch({ type: 'INCREMENT' });
+    expect(store.getState()).toBe(1);
+
+    let { actionsById } = store.liftedStore.getState();
+    let { duration } = actionsById[1];
+    expect(duration).toNotBe(undefined);
+    expect(duration).toBeGreaterThanOrEqualTo(0);
+  });
 });
