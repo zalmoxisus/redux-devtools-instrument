@@ -72,17 +72,23 @@ export const ActionCreators = {
 
 export const INIT_ACTION = { type: '@@INIT' };
 
+const perfTime = (
+  typeof window !== 'undefined'
+  && (window.performance || window.msPerformance || window.webkitPerformance)
+  || Date
+);
+
+/**
+ * Used to measure reducers duration (performance time).
+ */
+export function getPerfTime() {
+  return perfTime.now();
+}
+
 /**
  * Computes the next entry in the log by applying an action.
  */
-function computeNextEntry(reducer, action, state, error) {
-  if (error) {
-    return {
-      state,
-      error: 'Interrupted by an error up the chain'
-    };
-  }
-
+function computeNextEntry(reducer, action, state) {
   let nextState = state;
   let nextError;
   try {
@@ -134,9 +140,21 @@ function recomputeStates(
     const previousError = previousEntry ? previousEntry.error : undefined;
 
     const shouldSkip = skippedActionIds.indexOf(actionId) > -1;
-    const entry = shouldSkip ?
-      previousEntry :
-      computeNextEntry(reducer, action, previousState, previousError);
+    let entry;
+    if (shouldSkip) {
+      entry = previousEntry;
+    } else {
+      if (previousError) {
+        entry = {
+          state: previousState,
+          error: 'Interrupted by an error up the chain'
+        }
+      } else {
+        const startPerfTime = getPerfTime();
+        entry = computeNextEntry(reducer, action, previousState);
+        actionsById[actionId].duration = getPerfTime() - startPerfTime;
+      }
+    }
 
     nextComputedStates.push(entry);
   }
