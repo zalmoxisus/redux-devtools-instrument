@@ -326,6 +326,10 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           currentStateIndex,
           computedStates
         } = liftedAction.nextLiftedState);
+
+        if(liftedAction.noRecompute){
+          minInvalidatedStateIndex = Inifinity
+        }
         break;
       }
       case '@@redux/INIT': {
