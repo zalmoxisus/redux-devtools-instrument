@@ -552,6 +552,14 @@ describe('instrument', () => {
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(exportedState));
       expect(importMonitoredLiftedStore.getState()).toEqual(exportedState);
     });
+
+    it('should allow for state to be imported without replaying actions', () => {
+      let importMonitoredStore = createStore(counter, instrument());
+      let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(exportedState, true));
+      expect(importMonitoredLiftedStore.getState()).toEqual(exportedState);
+    });
   });
 
   it('throws if reducer is not a function', () => {
