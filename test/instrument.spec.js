@@ -557,8 +557,15 @@ describe('instrument', () => {
       let importMonitoredStore = createStore(counter, instrument());
       let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
 
-      importMonitoredLiftedStore.dispatch(ActionCreators.importState(exportedState, true));
-      expect(importMonitoredLiftedStore.getState()).toEqual(exportedState);
+      let noComputedExportedState = Object.assign({}, exportedState);
+      delete noComputedExportedState.computedStates;
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(noComputedExportedState, true));
+
+      let expectedImportedState = Object.assign({}, noComputedExportedState, {
+        computedStates: undefined
+      });
+      expect(importMonitoredLiftedStore.getState()).toEqual(expectedImportedState);
     });
   });
 

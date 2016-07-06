@@ -118,8 +118,9 @@ function recomputeStates(
   // Optimization: exit early and return the same reference
   // if we know nothing could have changed.
   if (
-    minInvalidatedStateIndex >= computedStates.length &&
-    computedStates.length === stagedActionIds.length
+    !computedStates ||
+    (minInvalidatedStateIndex >= computedStates.length &&
+    computedStates.length === stagedActionIds.length)
   ) {
     return computedStates;
   }
