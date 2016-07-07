@@ -200,7 +200,10 @@ describe('instrument', () => {
 
   it('should catch and record errors', () => {
     let spy = spyOn(console, 'error');
-    let storeWithBug = createStore(counterWithBug, instrument());
+    let storeWithBug = createStore(
+      counterWithBug,
+      instrument(undefined, { shouldCatchErrors: true })
+    );
 
     storeWithBug.dispatch({ type: 'INCREMENT' });
     storeWithBug.dispatch({ type: 'DECREMENT' });
@@ -395,7 +398,10 @@ describe('instrument', () => {
     it('should not auto-commit errors', () => {
       let spy = spyOn(console, 'error');
 
-      let storeWithBug = createStore(counterWithBug, instrument(undefined, { maxAge: 3 }));
+      let storeWithBug = createStore(
+        counterWithBug,
+        instrument(undefined, { maxAge: 3, shouldCatchErrors: true })
+      );
       let liftedStoreWithBug = storeWithBug.liftedStore;
       storeWithBug.dispatch({ type: 'DECREMENT' });
       storeWithBug.dispatch({ type: 'INCREMENT' });
@@ -410,7 +416,10 @@ describe('instrument', () => {
     it('should auto-commit actions after hot reload fixes error', () => {
       let spy = spyOn(console, 'error');
 
-      let storeWithBug = createStore(counterWithBug, instrument(undefined, { maxAge: 3 }));
+      let storeWithBug = createStore(
+        counterWithBug,
+        instrument(undefined, { maxAge: 3, shouldCatchErrors: true })
+      );
       let liftedStoreWithBug = storeWithBug.liftedStore;
       storeWithBug.dispatch({ type: 'DECREMENT' });
       storeWithBug.dispatch({ type: 'DECREMENT' });
@@ -451,7 +460,10 @@ describe('instrument', () => {
     it('should continue to increment currentStateIndex while error blocks commit', () => {
       let spy = spyOn(console, 'error');
 
-      let storeWithBug = createStore(counterWithBug, instrument(undefined, { maxAge: 3 }));
+      let storeWithBug = createStore(
+        counterWithBug,
+        instrument(undefined, { maxAge: 3, shouldCatchErrors: true })
+      );
       let liftedStoreWithBug = storeWithBug.liftedStore;
 
       storeWithBug.dispatch({ type: 'DECREMENT' });
@@ -471,7 +483,10 @@ describe('instrument', () => {
     it('should adjust currentStateIndex correctly when multiple actions are committed', () => {
       let spy = spyOn(console, 'error');
 
-      let storeWithBug = createStore(counterWithBug, instrument(undefined, { maxAge: 3 }));
+      let storeWithBug = createStore(
+        counterWithBug,
+        instrument(undefined, { maxAge: 3, shouldCatchErrors: true })
+      );
       let liftedStoreWithBug = storeWithBug.liftedStore;
 
       storeWithBug.dispatch({ type: 'DECREMENT' });
@@ -492,7 +507,10 @@ describe('instrument', () => {
     it('should not allow currentStateIndex to drop below 0', () => {
       let spy = spyOn(console, 'error');
 
-      let storeWithBug = createStore(counterWithBug, instrument(undefined, { maxAge: 3 }));
+      let storeWithBug = createStore(
+        counterWithBug,
+        instrument(undefined, { maxAge: 3, shouldCatchErrors: true })
+      );
       let liftedStoreWithBug = storeWithBug.liftedStore;
 
       storeWithBug.dispatch({ type: 'DECREMENT' });

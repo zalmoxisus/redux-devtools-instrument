@@ -75,12 +75,9 @@ export const INIT_ACTION = { type: '@@INIT' };
 /**
  * Computes the next entry in the log by applying an action.
  */
-function computeNextEntry(reducer, action, state, error) {
-  if (error) {
-    return {
-      state,
-      error: 'Interrupted by an error up the chain'
-    };
+function computeNextEntry(reducer, action, state, shouldCatchErrors) {
+  if (!shouldCatchErrors) {
+    return { state: reducer(state, action) };
   }
 
   let nextState = state;
@@ -113,7 +110,8 @@ function recomputeStates(
   committedState,
   actionsById,
   stagedActionIds,
-  skippedActionIds
+  skippedActionIds,
+  shouldCatchErrors
 ) {
   // Optimization: exit early and return the same reference
   // if we know nothing could have changed.
@@ -131,13 +129,21 @@ function recomputeStates(
 
     const previousEntry = nextComputedStates[i - 1];
     const previousState = previousEntry ? previousEntry.state : committedState;
-    const previousError = previousEntry ? previousEntry.error : undefined;
 
     const shouldSkip = skippedActionIds.indexOf(actionId) > -1;
-    const entry = shouldSkip ?
-      previousEntry :
-      computeNextEntry(reducer, action, previousState, previousError);
-
+    let entry;
+    if (shouldSkip) {
+      entry = previousEntry;
+    } else {
+      if (shouldCatchErrors && previousEntry && previousEntry.error) {
+        entry = {
+          state: previousState,
+          error: 'Interrupted by an error up the chain'
+        };
+      } else {
+        entry = computeNextEntry(reducer, action, previousState, shouldCatchErrors);
+      }
+    }
     nextComputedStates.push(entry);
   }
 
@@ -341,7 +347,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
             committedState,
             actionsById,
             stagedActionIds,
-            skippedActionIds
+            skippedActionIds,
+            options.shouldCatchErrors
           );
 
           commitExcessActions(stagedActionIds.length - options.maxAge);
@@ -367,7 +374,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       actionsById,
       stagedActionIds,
-      skippedActionIds
+      skippedActionIds,
+      options.shouldCatchErrors
     );
     monitorState = monitorReducer(monitorState, liftedAction);
     return {
