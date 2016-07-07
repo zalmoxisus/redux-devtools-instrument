@@ -65,8 +65,8 @@ export const ActionCreators = {
     return { type: ActionTypes.JUMP_TO_STATE, index };
   },
 
-  importState(nextLiftedState) {
-    return { type: ActionTypes.IMPORT_STATE, nextLiftedState };
+  importState(nextLiftedState, noRecompute) {
+    return { type: ActionTypes.IMPORT_STATE, nextLiftedState, noRecompute };
   }
 };
 
@@ -116,8 +116,9 @@ function recomputeStates(
   // Optimization: exit early and return the same reference
   // if we know nothing could have changed.
   if (
-    minInvalidatedStateIndex >= computedStates.length &&
-    computedStates.length === stagedActionIds.length
+    !computedStates ||
+    (minInvalidatedStateIndex >= computedStates.length &&
+    computedStates.length === stagedActionIds.length)
   ) {
     return computedStates;
   }
@@ -332,6 +333,10 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           currentStateIndex,
           computedStates
         } = liftedAction.nextLiftedState);
+
+        if (liftedAction.noRecompute) {
+          minInvalidatedStateIndex = Infinity;
+        }
         break;
       }
       case '@@redux/INIT': {
