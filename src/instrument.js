@@ -116,7 +116,7 @@ function recomputeStates(
   // Optimization: exit early and return the same reference
   // if we know nothing could have changed.
   if (
-    !computedStates ||
+    !computedStates || minInvalidatedStateIndex === -1 ||
     (minInvalidatedStateIndex >= computedStates.length &&
     computedStates.length === stagedActionIds.length)
   ) {
