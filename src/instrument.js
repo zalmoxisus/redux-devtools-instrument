@@ -322,21 +322,39 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case ActionTypes.IMPORT_STATE: {
-        // Completely replace everything.
-        ({
-          monitorState,
-          actionsById,
-          nextActionId,
-          stagedActionIds,
-          skippedActionIds,
-          committedState,
-          currentStateIndex,
-          computedStates
-        } = liftedAction.nextLiftedState);
+        if (Array.isArray(liftedAction.nextLiftedState)) {
+          // recompute array of actions
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          currentStateIndex = liftedAction.nextLiftedState.length;
+          computedStates = [];
+          minInvalidatedStateIndex = 0;
+          // iterate through actions
+          liftedAction.nextLiftedState.forEach(action => {
+            actionsById[nextActionId] = liftAction(action);
+            stagedActionIds.push(nextActionId);
+            nextActionId++;
+          });
+        } else {
+          // Completely replace everything.
+          ({
+            monitorState,
+            actionsById,
+            nextActionId,
+            stagedActionIds,
+            skippedActionIds,
+            committedState,
+            currentStateIndex,
+            computedStates
+          } = liftedAction.nextLiftedState);
 
-        if (liftedAction.noRecompute) {
-          minInvalidatedStateIndex = Infinity;
+          if (liftedAction.noRecompute) {
+            minInvalidatedStateIndex = Infinity;
+          }
         }
+
         break;
       }
       case '@@redux/INIT': {
