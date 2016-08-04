@@ -2,6 +2,7 @@ import expect, { spyOn } from 'expect';
 import { createStore, compose } from 'redux';
 import instrument, { ActionCreators } from '../src/instrument';
 import { Observable } from 'rxjs';
+import _ from 'lodash';
 
 import 'rxjs/add/observable/from';
 
@@ -584,6 +585,53 @@ describe('instrument', () => {
         computedStates: undefined
       });
       expect(importMonitoredLiftedStore.getState()).toEqual(expectedImportedState);
+    });
+  });
+
+  function filterTimestamps(state) {
+    state.actionsById = _.mapValues(state.actionsById, (action) => {
+      delete action.timestamp;
+      return action;
+    });
+    return state;
+  }
+
+  describe('Import Actions', () => {
+    let monitoredStore;
+    let monitoredLiftedStore;
+    let exportedState;
+    let savedActions = [
+      { type: 'INCREMENT' },
+      { type: 'INCREMENT' },
+      { type: 'INCREMENT' }
+    ];
+
+    beforeEach(() => {
+      monitoredStore = createStore(counter, instrument());
+      monitoredLiftedStore = monitoredStore.liftedStore;
+      // Pass actions through component
+      savedActions.forEach(action => monitoredStore.dispatch(action));
+      // get the final state
+      exportedState = filterTimestamps(monitoredLiftedStore.getState());
+    });
+
+    it('should replay all the steps when a state is imported', () => {
+      let importMonitoredStore = createStore(counter, instrument());
+      let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
+      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+    });
+
+    it('should replace the existing action log with the one imported', () => {
+      let importMonitoredStore = createStore(counter, instrument());
+      let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
+
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
+      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
     });
   });
 
