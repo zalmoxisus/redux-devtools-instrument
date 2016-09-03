@@ -330,6 +330,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           skippedActionIds = [];
           currentStateIndex = liftedAction.nextLiftedState.length;
           computedStates = [];
+          committedState = liftedAction.preloadedState;
           minInvalidatedStateIndex = 0;
           // iterate through actions
           liftedAction.nextLiftedState.forEach(action => {
