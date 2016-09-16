@@ -86,7 +86,12 @@ function computeNextEntry(reducer, action, state, shouldCatchErrors) {
     nextState = reducer(state, action);
   } catch (err) {
     nextError = err.toString();
-    if (typeof window === 'object' && typeof window.chrome !== 'undefined') {
+    if (
+      typeof window === 'object' && (
+      typeof window.chrome !== 'undefined' ||
+      typeof window.process !== 'undefined' &&
+      window.process.type === 'renderer'
+    )) {
       // In Chrome, rethrowing provides better source map support
       setTimeout(() => { throw err; });
     } else {
