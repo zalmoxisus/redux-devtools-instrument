@@ -312,8 +312,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       }
       case ActionTypes.PERFORM_ACTION: {
         if (dropNewActions) {
-          minInvalidatedStateIndex = Infinity;
-          break;
+          return liftedState || initialLiftedState;
         }
 
         // Auto-commit as new actions come in.
