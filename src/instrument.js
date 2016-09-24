@@ -12,7 +12,8 @@ export const ActionTypes = {
   TOGGLE_ACTION: 'TOGGLE_ACTION',
   SET_ACTIONS_ACTIVE: 'SET_ACTIONS_ACTIVE',
   JUMP_TO_STATE: 'JUMP_TO_STATE',
-  IMPORT_STATE: 'IMPORT_STATE'
+  IMPORT_STATE: 'IMPORT_STATE',
+  LOCK_CHANGES: 'LOCK_CHANGES'
 };
 
 /**
@@ -67,6 +68,10 @@ export const ActionCreators = {
 
   importState(nextLiftedState, noRecompute) {
     return { type: ActionTypes.IMPORT_STATE, nextLiftedState, noRecompute };
+  },
+
+  lockChanges(status) {
+    return { type: ActionTypes.LOCK_CHANGES, status };
   }
 };
 
@@ -170,7 +175,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     skippedActionIds: [],
     committedState: initialCommittedState,
     currentStateIndex: 0,
-    computedStates: []
+    computedStates: [],
+    dropNewActions: false
   };
 
   /**
@@ -185,7 +191,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       skippedActionIds,
       committedState,
       currentStateIndex,
-      computedStates
+      computedStates,
+      dropNewActions
     } = liftedState || initialLiftedState;
 
     if (!liftedState) {
@@ -304,6 +311,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case ActionTypes.PERFORM_ACTION: {
+        if (dropNewActions) {
+          minInvalidatedStateIndex = Infinity;
+          break;
+        }
+
         // Auto-commit as new actions come in.
         if (options.maxAge && stagedActionIds.length === options.maxAge) {
           commitExcessActions(1);
@@ -355,6 +367,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           }
         }
 
+        break;
+      }
+      case ActionTypes.LOCK_CHANGES: {
+        dropNewActions = liftedAction.status;
+        minInvalidatedStateIndex = Infinity;
         break;
       }
       case '@@redux/INIT': {
@@ -409,7 +426,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       skippedActionIds,
       committedState,
       currentStateIndex,
-      computedStates
+      computedStates,
+      dropNewActions
     };
   };
 }

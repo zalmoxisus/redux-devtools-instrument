@@ -635,6 +635,33 @@ describe('instrument', () => {
     });
   });
 
+  describe('Lock Changes', () => {
+    it('should lock', () => {
+      store.dispatch({ type: 'INCREMENT' });
+      store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: true });
+      expect(store.liftedStore.getState().dropNewActions).toBe(true);
+      expect(store.liftedStore.getState().nextActionId).toBe(2);
+      expect(store.getState()).toBe(1);
+
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(2);
+      expect(store.getState()).toBe(1);
+
+      liftedStore.dispatch(ActionCreators.toggleAction(1));
+      expect(store.getState()).toBe(0);
+      liftedStore.dispatch(ActionCreators.toggleAction(1));
+      expect(store.getState()).toBe(1);
+
+      store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: false });
+      expect(store.liftedStore.getState().dropNewActions).toBe(false);
+      expect(store.liftedStore.getState().nextActionId).toBe(2);
+
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(3);
+      expect(store.getState()).toBe(2);
+    });
+  });
+
   it('throws if reducer is not a function', () => {
     expect(() =>
       createStore(undefined, instrument())
