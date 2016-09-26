@@ -46,6 +46,7 @@ export default function configureStore(initialState) {
   - **options** *object*
     - **maxAge** *number* - maximum allowed actions to be stored on the history tree, the oldest actions are removed once `maxAge` is reached. 
     - **shouldCatchErrors** *boolean* - if specified as `true`, whenever there's an exception in reducers, the monitors will show the error message, and next actions will not be dispatched.
+    - **shouldRecordChanges** *boolean* - if specified as `false`, it will not record the changes till `pauseRecording(false)` is dispatched. Default is `true`.
 
 ### License
 

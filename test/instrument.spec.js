@@ -662,6 +662,34 @@ describe('instrument', () => {
     });
   });
 
+  describe('Pause recording', () => {
+    it('should pause', () => {
+      expect(store.liftedStore.getState().isPaused).toBe(false);
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(3);
+      expect(store.getState()).toBe(2);
+
+      store.liftedStore.dispatch({ type: 'PAUSE_RECORDING', status: true });
+      expect(store.liftedStore.getState().isPaused).toBe(true);
+
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(1);
+      expect(store.liftedStore.getState().actionsById[0].action).toEqual({ type: '@@INIT' });
+      expect(store.getState()).toBe(4);
+
+      store.liftedStore.dispatch({ type: 'PAUSE_RECORDING', status: false });
+      expect(store.liftedStore.getState().isPaused).toBe(false);
+
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(3);
+      expect(store.liftedStore.getState().actionsById[2].action).toEqual({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(6);
+    });
+  });
+
   it('throws if reducer is not a function', () => {
     expect(() =>
       createStore(undefined, instrument())
