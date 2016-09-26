@@ -13,7 +13,8 @@ export const ActionTypes = {
   SET_ACTIONS_ACTIVE: 'SET_ACTIONS_ACTIVE',
   JUMP_TO_STATE: 'JUMP_TO_STATE',
   IMPORT_STATE: 'IMPORT_STATE',
-  LOCK_CHANGES: 'LOCK_CHANGES'
+  LOCK_CHANGES: 'LOCK_CHANGES',
+  PAUSE_RECORDING: 'PAUSE_RECORDING'
 };
 
 /**
@@ -72,6 +73,10 @@ export const ActionCreators = {
 
   lockChanges(status) {
     return { type: ActionTypes.LOCK_CHANGES, status };
+  },
+
+  pauseRecording(status) {
+    return { type: ActionTypes.PAUSE_RECORDING, status };
   }
 };
 
@@ -181,7 +186,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     committedState: initialCommittedState,
     currentStateIndex: 0,
     computedStates: [],
-    isLocked: false
+    isLocked: false,
+    isPaused: options.shouldRecordChanges === false
   };
 
   /**
@@ -197,7 +203,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       currentStateIndex,
       computedStates,
-      isLocked
+      isLocked,
+      isPaused
     } = liftedState || initialLiftedState;
 
     if (!liftedState) {
@@ -320,6 +327,24 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           return liftedState || initialLiftedState;
         }
 
+        if (isPaused) {
+          const computedState = computeNextEntry(
+            reducer, liftedAction.action, computedStates[currentStateIndex].state, false
+          );
+          return {
+            monitorState: monitorState,
+            actionsById: { 0: liftAction(INIT_ACTION) },
+            nextActionId: 1,
+            stagedActionIds: [0],
+            skippedActionIds: [],
+            committedState: computedState.state,
+            currentStateIndex: 0,
+            computedStates: [computedState],
+            dropNewActions: false,
+            isPaused: true
+          };
+        }
+
         // Auto-commit as new actions come in.
         if (options.maxAge && stagedActionIds.length === options.maxAge) {
           commitExcessActions(1);
@@ -376,6 +401,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       }
       case ActionTypes.LOCK_CHANGES: {
         isLocked = liftedAction.status;
+        minInvalidatedStateIndex = Infinity;
+        break;
+      }
+      case ActionTypes.PAUSE_RECORDING: {
+        isPaused = liftedAction.status;
         minInvalidatedStateIndex = Infinity;
         break;
       }
@@ -436,7 +466,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       currentStateIndex,
       computedStates,
-      isLocked
+      isLocked,
+      isPaused
     };
   };
 }
