@@ -410,7 +410,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case '@@redux/INIT': {
-        // Always recompute states on hot reload and init.
+        if (options.shouldHotReload === false && liftedState) {
+          return liftedState;
+        }
+
+        // Recompute states on hot reload and init.
         minInvalidatedStateIndex = 0;
 
         if (options.maxAge && stagedActionIds.length > options.maxAge) {
