@@ -186,7 +186,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     committedState: initialCommittedState,
     currentStateIndex: 0,
     computedStates: [],
-    dropNewActions: false,
+    isLocked: false,
     isPaused: options.shouldRecordChanges === false
   };
 
@@ -203,7 +203,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       currentStateIndex,
       computedStates,
-      dropNewActions,
+      isLocked,
       isPaused
     } = liftedState || initialLiftedState;
 
@@ -323,7 +323,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case ActionTypes.PERFORM_ACTION: {
-        if (dropNewActions) {
+        if (isLocked) {
           return liftedState || initialLiftedState;
         }
 
@@ -400,7 +400,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case ActionTypes.LOCK_CHANGES: {
-        dropNewActions = liftedAction.status;
+        isLocked = liftedAction.status;
         minInvalidatedStateIndex = Infinity;
         break;
       }
@@ -466,7 +466,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       committedState,
       currentStateIndex,
       computedStates,
-      dropNewActions,
+      isLocked,
       isPaused
     };
   };
