@@ -639,7 +639,7 @@ describe('instrument', () => {
     it('should lock', () => {
       store.dispatch({ type: 'INCREMENT' });
       store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: true });
-      expect(store.liftedStore.getState().dropNewActions).toBe(true);
+      expect(store.liftedStore.getState().isLocked).toBe(true);
       expect(store.liftedStore.getState().nextActionId).toBe(2);
       expect(store.getState()).toBe(1);
 
@@ -653,7 +653,7 @@ describe('instrument', () => {
       expect(store.getState()).toBe(1);
 
       store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: false });
-      expect(store.liftedStore.getState().dropNewActions).toBe(false);
+      expect(store.liftedStore.getState().isLocked).toBe(false);
       expect(store.liftedStore.getState().nextActionId).toBe(2);
 
       store.dispatch({ type: 'INCREMENT' });
