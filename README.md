@@ -47,6 +47,7 @@ export default function configureStore(initialState) {
     - **maxAge** *number* - maximum allowed actions to be stored on the history tree, the oldest actions are removed once `maxAge` is reached. 
     - **shouldCatchErrors** *boolean* - if specified as `true`, whenever there's an exception in reducers, the monitors will show the error message, and next actions will not be dispatched.
     - **shouldRecordChanges** *boolean* - if specified as `false`, it will not record the changes till `pauseRecording(false)` is dispatched. Default is `true`.
+    - **shouldStartLocked** *boolean* - if specified as `true`, it will not allow any non-monitor actions to be dispatched till `lockChanges(false)` is dispatched. Default is `false`.
     - **shouldHotReload** *boolean* - if set to `false`, will not recompute the states on hot reloading (or on replacing the reducers). Default to `true`.
 
 ### License

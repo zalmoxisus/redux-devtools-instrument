@@ -660,6 +660,25 @@ describe('instrument', () => {
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.getState()).toBe(2);
     });
+    it('should start locked', () => {
+      store = createStore(counter, instrument(undefined, { shouldStartLocked: true }));
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().isLocked).toBe(true);
+      expect(store.liftedStore.getState().nextActionId).toBe(1);
+      expect(store.getState()).toBe(0);
+
+      const savedActions = [{ type: 'INCREMENT' }, { type: 'INCREMENT' }];
+      store.liftedStore.dispatch(ActionCreators.importState(savedActions));
+      expect(store.liftedStore.getState().nextActionId).toBe(3);
+      expect(store.getState()).toBe(2);
+
+      store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: false });
+      expect(store.liftedStore.getState().isLocked).toBe(false);
+
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      expect(store.getState()).toBe(3);
+    });
   });
 
   describe('Pause recording', () => {

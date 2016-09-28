@@ -186,7 +186,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     committedState: initialCommittedState,
     currentStateIndex: 0,
     computedStates: [],
-    isLocked: false,
+    isLocked: options.shouldStartLocked === true,
     isPaused: options.shouldRecordChanges === false
   };
 
