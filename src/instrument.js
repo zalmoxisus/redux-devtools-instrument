@@ -237,12 +237,79 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         : 0;
     }
 
+    function computePausedAction(shouldInit) {
+      let computedState;
+      if (shouldInit) {
+        computedState = computedStates[currentStateIndex];
+        monitorState = monitorReducer(monitorState, liftedAction);
+      } else {
+        computedState = computeNextEntry(
+          reducer, liftedAction.action, computedStates[currentStateIndex].state, false
+        );
+      }
+      if (!options.pauseActionType || nextActionId === 1) {
+        return {
+          monitorState,
+          actionsById: { 0: liftAction(INIT_ACTION) },
+          nextActionId: 1,
+          stagedActionIds: [0],
+          skippedActionIds: [],
+          committedState: computedState.state,
+          currentStateIndex: 0,
+          computedStates: [computedState],
+          isLocked,
+          isPaused: true
+        };
+      }
+      if (shouldInit) {
+        stagedActionIds = [...stagedActionIds, nextActionId];
+        nextActionId++;
+        currentStateIndex++;
+      }
+      return {
+        monitorState,
+        actionsById: {
+          ...actionsById,
+          [nextActionId - 1]: liftAction({ type: options.pauseActionType })
+        },
+        nextActionId,
+        stagedActionIds,
+        skippedActionIds,
+        committedState,
+        currentStateIndex,
+        computedStates: [...computedStates.slice(0, currentStateIndex), computedState],
+        isLocked,
+        isPaused: true
+      };
+    }
+
     // By default, agressively recompute every state whatever happens.
     // This has O(n) performance, so we'll override this to a sensible
     // value whenever we feel like we don't have to recompute the states.
     let minInvalidatedStateIndex = 0;
 
     switch (liftedAction.type) {
+      case ActionTypes.PERFORM_ACTION: {
+        if (isLocked) return liftedState || initialLiftedState;
+        if (isPaused) return computePausedAction();
+
+        // Auto-commit as new actions come in.
+        if (options.maxAge && stagedActionIds.length === options.maxAge) {
+          commitExcessActions(1);
+        }
+
+        if (currentStateIndex === stagedActionIds.length - 1) {
+          currentStateIndex++;
+        }
+        const actionId = nextActionId++;
+        // Mutation! This is the hottest path, and we optimize on purpose.
+        // It is safe because we set a new key in a cache dictionary.
+        actionsById[actionId] = liftedAction;
+        stagedActionIds = [...stagedActionIds, actionId];
+        // Optimization: we know that only the new action needs computing.
+        minInvalidatedStateIndex = stagedActionIds.length - 1;
+        break;
+      }
       case ActionTypes.RESET: {
         // Get back to the state the store was created with.
         actionsById = { 0: liftAction(INIT_ACTION) };
@@ -322,46 +389,6 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         currentStateIndex = Math.min(currentStateIndex, stagedActionIds.length - 1);
         break;
       }
-      case ActionTypes.PERFORM_ACTION: {
-        if (isLocked) {
-          return liftedState || initialLiftedState;
-        }
-
-        if (isPaused) {
-          const computedState = computeNextEntry(
-            reducer, liftedAction.action, computedStates[currentStateIndex].state, false
-          );
-          return {
-            monitorState: monitorState,
-            actionsById: { 0: liftAction(INIT_ACTION) },
-            nextActionId: 1,
-            stagedActionIds: [0],
-            skippedActionIds: [],
-            committedState: computedState.state,
-            currentStateIndex: 0,
-            computedStates: [computedState],
-            dropNewActions: false,
-            isPaused: true
-          };
-        }
-
-        // Auto-commit as new actions come in.
-        if (options.maxAge && stagedActionIds.length === options.maxAge) {
-          commitExcessActions(1);
-        }
-
-        if (currentStateIndex === stagedActionIds.length - 1) {
-          currentStateIndex++;
-        }
-        const actionId = nextActionId++;
-        // Mutation! This is the hottest path, and we optimize on purpose.
-        // It is safe because we set a new key in a cache dictionary.
-        actionsById[actionId] = liftedAction;
-        stagedActionIds = [...stagedActionIds, actionId];
-        // Optimization: we know that only the new action needs computing.
-        minInvalidatedStateIndex = stagedActionIds.length - 1;
-        break;
-      }
       case ActionTypes.IMPORT_STATE: {
         if (Array.isArray(liftedAction.nextLiftedState)) {
           // recompute array of actions
@@ -406,6 +433,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       }
       case ActionTypes.PAUSE_RECORDING: {
         isPaused = liftedAction.status;
+        if (isPaused) return computePausedAction(true);
         minInvalidatedStateIndex = Infinity;
         break;
       }

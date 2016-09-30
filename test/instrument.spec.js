@@ -689,8 +689,11 @@ describe('instrument', () => {
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.getState()).toBe(2);
 
-      store.liftedStore.dispatch({ type: 'PAUSE_RECORDING', status: true });
+      store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
       expect(store.liftedStore.getState().isPaused).toBe(true);
+      expect(store.liftedStore.getState().nextActionId).toBe(1);
+      expect(store.liftedStore.getState().actionsById[0].action).toEqual({ type: '@@INIT' });
+      expect(store.getState()).toBe(2);
 
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
@@ -698,13 +701,46 @@ describe('instrument', () => {
       expect(store.liftedStore.getState().actionsById[0].action).toEqual({ type: '@@INIT' });
       expect(store.getState()).toBe(4);
 
-      store.liftedStore.dispatch({ type: 'PAUSE_RECORDING', status: false });
+      store.liftedStore.dispatch(ActionCreators.pauseRecording(false));
       expect(store.liftedStore.getState().isPaused).toBe(false);
 
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.liftedStore.getState().actionsById[2].action).toEqual({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(6);
+    });
+    it('should maintain the history while paused', () => {
+      store = createStore(counter, instrument(undefined, { pauseActionType: '@@PAUSED' }));
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(2);
+      expect(store.liftedStore.getState().nextActionId).toBe(3);
+      expect(store.liftedStore.getState().isPaused).toBe(false);
+
+      store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
+      expect(store.liftedStore.getState().isPaused).toBe(true);
+      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      expect(store.getState()).toBe(2);
+
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      expect(store.getState()).toBe(4);
+
+      store.liftedStore.dispatch(ActionCreators.pauseRecording(false));
+      expect(store.liftedStore.getState().isPaused).toBe(false);
+      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      expect(store.getState()).toBe(4);
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(5);
+      expect(store.getState()).toBe(5);
+
+      store.liftedStore.dispatch(ActionCreators.commit());
+      store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.getState()).toBe(6);
     });
   });
