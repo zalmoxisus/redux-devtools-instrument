@@ -83,13 +83,9 @@ export const ActionCreators = {
 export const INIT_ACTION = { type: '@@INIT' };
 
 /**
- * Computes the next entry in the log by applying an action.
+ * Computes the next entry with exceptions catching.
  */
-function computeNextEntry(reducer, action, state, shouldCatchErrors) {
-  if (!shouldCatchErrors) {
-    return { state: reducer(state, action) };
-  }
-
+function computeWithTryCatch(reducer, action, state) {
   let nextState = state;
   let nextError;
   try {
@@ -98,10 +94,10 @@ function computeNextEntry(reducer, action, state, shouldCatchErrors) {
     nextError = err.toString();
     if (
       typeof window === 'object' && (
-      typeof window.chrome !== 'undefined' ||
-      typeof window.process !== 'undefined' &&
-      window.process.type === 'renderer'
-    )) {
+        typeof window.chrome !== 'undefined' ||
+        typeof window.process !== 'undefined' &&
+        window.process.type === 'renderer'
+      )) {
       // In Chrome, rethrowing provides better source map support
       setTimeout(() => { throw err; });
     } else {
@@ -113,6 +109,16 @@ function computeNextEntry(reducer, action, state, shouldCatchErrors) {
     state: nextState,
     error: nextError
   };
+}
+
+/**
+ * Computes the next entry in the log by applying an action.
+ */
+function computeNextEntry(reducer, action, state, shouldCatchErrors) {
+  if (!shouldCatchErrors) {
+    return { state: reducer(state, action) };
+  }
+  return computeWithTryCatch(reducer, action, state);
 }
 
 /**
