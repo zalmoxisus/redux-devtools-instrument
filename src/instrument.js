@@ -268,9 +268,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         };
       }
       if (shouldInit) {
+        if (currentStateIndex === stagedActionIds.length - 1) {
+          currentStateIndex++;
+        }
         stagedActionIds = [...stagedActionIds, nextActionId];
         nextActionId++;
-        currentStateIndex++;
       }
       return {
         monitorState,
@@ -283,7 +285,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         skippedActionIds,
         committedState,
         currentStateIndex,
-        computedStates: [...computedStates.slice(0, currentStateIndex), computedState],
+        computedStates: [...computedStates.slice(0, stagedActionIds.length - 1), computedState],
         isLocked,
         isPaused: true
       };
