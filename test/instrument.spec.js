@@ -731,10 +731,10 @@ describe('instrument', () => {
 
       store.liftedStore.dispatch(ActionCreators.pauseRecording(false));
       expect(store.liftedStore.getState().isPaused).toBe(false);
-      expect(store.liftedStore.getState().nextActionId).toBe(4);
+      expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.getState()).toBe(4);
       store.dispatch({ type: 'INCREMENT' });
-      expect(store.liftedStore.getState().nextActionId).toBe(5);
+      expect(store.liftedStore.getState().nextActionId).toBe(2);
       expect(store.getState()).toBe(5);
 
       store.liftedStore.dispatch(ActionCreators.commit());
