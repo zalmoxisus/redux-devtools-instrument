@@ -189,6 +189,22 @@ describe('instrument', () => {
     expect(store.getState()).toBe(2);
   });
 
+  it('should jump to action', () => {
+    store.dispatch({ type: 'INCREMENT' });
+    store.dispatch({ type: 'DECREMENT' });
+    store.dispatch({ type: 'INCREMENT' });
+    expect(store.getState()).toBe(1);
+
+    liftedStore.dispatch(ActionCreators.jumpToAction(0));
+    expect(store.getState()).toBe(0);
+
+    liftedStore.dispatch(ActionCreators.jumpToAction(1));
+    expect(store.getState()).toBe(1);
+
+    liftedStore.dispatch(ActionCreators.jumpToAction(10));
+    expect(store.getState()).toBe(1);
+  });
+
   it('should replace the reducer', () => {
     store.dispatch({ type: 'INCREMENT' });
     store.dispatch({ type: 'DECREMENT' });
