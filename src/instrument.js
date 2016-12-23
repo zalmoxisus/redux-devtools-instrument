@@ -12,6 +12,7 @@ export const ActionTypes = {
   TOGGLE_ACTION: 'TOGGLE_ACTION',
   SET_ACTIONS_ACTIVE: 'SET_ACTIONS_ACTIVE',
   JUMP_TO_STATE: 'JUMP_TO_STATE',
+  JUMP_TO_ACTION: 'JUMP_TO_ACTION',
   IMPORT_STATE: 'IMPORT_STATE',
   LOCK_CHANGES: 'LOCK_CHANGES',
   PAUSE_RECORDING: 'PAUSE_RECORDING'
@@ -65,6 +66,10 @@ export const ActionCreators = {
 
   jumpToState(index) {
     return { type: ActionTypes.JUMP_TO_STATE, index };
+  },
+
+  jumpToAction(actionId) {
+    return { type: ActionTypes.JUMP_TO_ACTION, actionId };
   },
 
   importState(nextLiftedState, noRecompute) {
@@ -387,6 +392,14 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         // which state is considered the current one. Useful for sliders.
         currentStateIndex = liftedAction.index;
         // Optimization: we know the history has not changed.
+        minInvalidatedStateIndex = Infinity;
+        break;
+      }
+      case ActionTypes.JUMP_TO_ACTION: {
+        // Jumps to a corresponding state to a specific action.
+        // Useful when filtering actions.
+        const index = stagedActionIds.indexOf(liftedAction.actionId);
+        if (index !== -1) currentStateIndex = index;
         minInvalidatedStateIndex = Infinity;
         break;
       }
