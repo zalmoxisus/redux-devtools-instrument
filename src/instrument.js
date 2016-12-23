@@ -443,16 +443,15 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         isPaused = liftedAction.status;
         if (isPaused) {
           return computePausedAction(true);
-        } else {
-          // Commit when unpausing
-          actionsById = { 0: liftAction(INIT_ACTION) };
-          nextActionId = 1;
-          stagedActionIds = [0];
-          skippedActionIds = [];
-          committedState = computedStates[currentStateIndex].state;
-          currentStateIndex = 0;
-          computedStates = [];
         }
+        // Commit when unpausing
+        actionsById = { 0: liftAction(INIT_ACTION) };
+        nextActionId = 1;
+        stagedActionIds = [0];
+        skippedActionIds = [];
+        committedState = computedStates[currentStateIndex].state;
+        currentStateIndex = 0;
+        computedStates = [];
         break;
       }
       case '@@redux/INIT': {
