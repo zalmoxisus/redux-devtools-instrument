@@ -54,6 +54,6 @@
   },
   "dependencies": {
     "lodash": "^4.2.0",
-    "symbol-observable": "^0.2.4"
+    "symbol-observable": "^1.0.2"
   }
 }
