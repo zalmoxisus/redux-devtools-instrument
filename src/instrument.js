@@ -13,6 +13,7 @@ export const ActionTypes = {
   SET_ACTIONS_ACTIVE: 'SET_ACTIONS_ACTIVE',
   JUMP_TO_STATE: 'JUMP_TO_STATE',
   JUMP_TO_ACTION: 'JUMP_TO_ACTION',
+  REORDER_ACTION: 'REORDER_ACTION',
   IMPORT_STATE: 'IMPORT_STATE',
   LOCK_CHANGES: 'LOCK_CHANGES',
   PAUSE_RECORDING: 'PAUSE_RECORDING'
@@ -62,6 +63,10 @@ export const ActionCreators = {
 
   setActionsActive(start, end, active=true) {
     return { type: ActionTypes.SET_ACTIONS_ACTIVE, start, end, active };
+  },
+
+  reorderAction(actionId, beforeActionId) {
+    return { type: ActionTypes.REORDER_ACTION, actionId, beforeActionId };
   },
 
   jumpToState(index) {
@@ -408,6 +413,39 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         stagedActionIds = difference(stagedActionIds, skippedActionIds);
         skippedActionIds = [];
         currentStateIndex = Math.min(currentStateIndex, stagedActionIds.length - 1);
+        break;
+      }
+      case ActionTypes.REORDER_ACTION: {
+        // Recompute actions in a new order.
+        const actionId = liftedAction.actionId;
+        const idx = stagedActionIds.indexOf(actionId);
+        // do nothing in case the action is already removed or trying to move the first action
+        if (idx < 1) break;
+        const beforeActionId = liftedAction.beforeActionId;
+        let newIdx = stagedActionIds.indexOf(beforeActionId);
+        if (newIdx < 1) { // move to the beginning or to the end
+          const count = stagedActionIds.length;
+          newIdx = beforeActionId > stagedActionIds[count - 1] ? count : 1;
+        }
+        const diff = idx - newIdx;
+
+        if (diff > 0) { // move left
+          stagedActionIds = [
+            ...stagedActionIds.slice(0, newIdx),
+            actionId,
+            ...stagedActionIds.slice(newIdx, idx),
+            ...stagedActionIds.slice(idx + 1)
+          ];
+          minInvalidatedStateIndex = newIdx;
+        } else if (diff < 0) { // move right
+          stagedActionIds = [
+            ...stagedActionIds.slice(0, idx),
+            ...stagedActionIds.slice(idx + 1, newIdx),
+            actionId,
+            ...stagedActionIds.slice(newIdx)
+          ];
+          minInvalidatedStateIndex = idx;
+        }
         break;
       }
       case ActionTypes.IMPORT_STATE: {

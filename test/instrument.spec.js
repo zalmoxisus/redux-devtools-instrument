@@ -40,6 +40,15 @@ function doubleCounter(state = 0, action) {
   }
 }
 
+function counterWithMultiply(state = 0, action) {
+  switch (action.type) {
+    case 'INCREMENT': return state + 1;
+    case 'DECREMENT': return state - 1;
+    case 'MULTIPLY': return state * 2;
+    default: return state;
+  }
+}
+
 describe('instrument', () => {
   let store;
   let liftedStore;
@@ -203,6 +212,44 @@ describe('instrument', () => {
 
     liftedStore.dispatch(ActionCreators.jumpToAction(10));
     expect(store.getState()).toBe(1);
+  });
+
+  it('should reorder actions', () => {
+    store = createStore(counterWithMultiply, instrument());
+    store.dispatch({ type: 'INCREMENT' });
+    store.dispatch({ type: 'DECREMENT' });
+    store.dispatch({ type: 'INCREMENT' });
+    store.dispatch({ type: 'MULTIPLY' });
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 1, 2, 3, 4]);
+    expect(store.getState()).toBe(2);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(4, 1));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 1, 2, 3]);
+    expect(store.getState()).toBe(1);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(4, 1));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 1, 2, 3]);
+    expect(store.getState()).toBe(1);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(4, 2));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 1, 4, 2, 3]);
+    expect(store.getState()).toBe(2);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(1, 10));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 2, 3, 1]);
+    expect(store.getState()).toBe(1);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(10, 1));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 2, 3, 1]);
+    expect(store.getState()).toBe(1);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(1, -2));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 1, 4, 2, 3]);
+    expect(store.getState()).toBe(2);
+
+    store.liftedStore.dispatch(ActionCreators.reorderAction(0, 1));
+    expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 1, 4, 2, 3]);
+    expect(store.getState()).toBe(2);
   });
 
   it('should replace the reducer', () => {
