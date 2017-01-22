@@ -40,6 +40,14 @@ function doubleCounter(state = 0, action) {
   }
 }
 
+function counterWithSymbols(state = 0, action) {
+  switch (action.type) {
+    case Symbol.for('INCREMENT'): return state + 1;
+    case Symbol.for('DECREMENT'): return state - 1;
+    default: return state;
+  }
+}
+
 function counterWithMultiply(state = 0, action) {
   switch (action.type) {
     case 'INCREMENT': return state + 1;
@@ -417,6 +425,36 @@ describe('instrument', () => {
     expect(reducerCalls).toBe(4);
 
     expect(monitoredLiftedStore.getState().computedStates).toBe(savedComputedStates);
+  });
+
+  it('should support symbols', () => {
+    store = createStore(
+      counterWithSymbols, instrument(undefined, { stringifyActionTypes: false })
+    );
+    const INCREMENT = Symbol.for('INCREMENT');
+    store.dispatch({ type: INCREMENT });
+    store.dispatch({ type: INCREMENT });
+    expect(store.liftedStore.getState().actionsById[1].action.type)
+      .toEqual(Symbol.for('INCREMENT'));
+    expect(store.getState()).toBe(2);
+
+    store.liftedStore.dispatch(ActionCreators.toggleAction(1));
+    expect(store.getState()).toBe(1);
+  });
+
+  it('should stringify symbols', () => {
+    store = createStore(
+      counterWithSymbols, instrument(undefined, { stringifyActionTypes: true })
+    );
+    const INCREMENT = Symbol.for('INCREMENT');
+    store.dispatch({ type: INCREMENT });
+    store.dispatch({ type: INCREMENT });
+    expect(store.liftedStore.getState().actionsById[1].action.type)
+      .toEqual('Symbol(INCREMENT)');
+    expect(store.getState()).toBe(2);
+
+    store.liftedStore.dispatch(ActionCreators.toggleAction(1));
+    expect(store.getState()).toBe(1);
   });
 
   describe('maxAge option', () => {
