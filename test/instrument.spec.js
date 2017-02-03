@@ -455,6 +455,10 @@ describe('instrument', () => {
 
     store.liftedStore.dispatch(ActionCreators.toggleAction(1));
     expect(store.getState()).toBe(1);
+
+    store.dispatch({ type: 1 });
+    expect(store.liftedStore.getState().actionsById[3].action.type)
+      .toBe(1);
   });
 
   describe('maxAge option', () => {
