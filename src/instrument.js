@@ -40,8 +40,7 @@ export const ActionCreators = {
 
     return {
       type: ActionTypes.PERFORM_ACTION,
-      action: shouldStringifyType && typeof action.type === 'symbol' ?
-        { ...action, type: action.type.toString() } : action,
+      action: shouldStringifyType ? { ...action, type: action.type.toString() } : action,
       timestamp: Date.now()
     };
   },
@@ -163,7 +162,7 @@ function recomputeStates(
   for (let i = minInvalidatedStateIndex; i < stagedActionIds.length; i++) {
     const actionId = stagedActionIds[i];
     let action = actionsById[actionId].action;
-    if (options.stringifyActionTypes && typeof action.type === 'string') {
+    if (options.stringifyActionTypes) {
       const sType = action.type.match(/^Symbol\((.+)\)$/);
       if (sType) action = { ...action, type: Symbol.for(sType[1]) };
     }
