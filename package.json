@@ -1,6 +1,6 @@
 {
   "name": "redux-devtools-instrument",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "Redux DevTools instrumentation",
   "main": "lib/instrument.js",
   "scripts": {
