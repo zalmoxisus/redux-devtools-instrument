@@ -643,7 +643,8 @@ export default function instrument(monitorReducer = () => null, options = {}) {
     );
   }
 
-  return createStore => (reducer, initialState, enhancer) => {
+  return createStore => (reducer, initialState, enhancer, disabled) => {
+    if (disabled) return createStore(reducer, initialState, enhancer);
 
     function liftReducer(r) {
       if (typeof r !== 'function') {
@@ -660,13 +661,7 @@ export default function instrument(monitorReducer = () => null, options = {}) {
       return liftReducerWith(r, initialState, monitorReducer, options);
     }
 
-    const liftedStore = createStore(liftReducer(reducer), enhancer);
-    if (liftedStore.liftedStore) {
-      throw new Error(
-        'DevTools instrumentation should not be applied more than once. ' +
-        'Check your store configuration.'
-      );
-    }
+    const liftedStore = createStore(liftReducer(reducer), initialState, enhancer, true);
 
     return unliftStore(liftedStore, liftReducer);
   };

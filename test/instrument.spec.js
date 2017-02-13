@@ -825,12 +825,13 @@ describe('instrument', () => {
     );
   });
 
-  it('throws if there are more than one instrument enhancer included', () => {
-    expect(() => {
-      createStore(counter, compose(instrument(), instrument()));
-    }).toThrow(
-      'DevTools instrumentation should not be applied more than once. ' +
-      'Check your store configuration.'
-    );
+  it('should work if there are more instrumentation enhancers included', () => {
+    let monitoredStore = createStore(counter, compose(instrument(), instrument()));
+    expect(store.getState()).toBe(0);
+    monitoredStore.dispatch({ type: 'INCREMENT' });
+    monitoredStore.dispatch({ type: 'INCREMENT' });
+    expect(monitoredStore.getState()).toBe(2);
+    monitoredStore.liftedStore.dispatch({ type: 'TOGGLE_ACTION', id: 1 });
+    expect(monitoredStore.getState()).toBe(1);
   });
 });
