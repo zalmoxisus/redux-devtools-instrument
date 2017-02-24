@@ -205,11 +205,13 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     isLocked: options.shouldStartLocked === true,
     isPaused: options.shouldRecordChanges === false
   };
+  const listener = options.listener;
 
   /**
    * Manages how the history actions modify the history state.
    */
   return (liftedState, liftedAction) => {
+    let newLiftedState;
     let {
       monitorState,
       actionsById,
@@ -309,7 +311,11 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     switch (liftedAction.type) {
       case ActionTypes.PERFORM_ACTION: {
         if (isLocked) return liftedState || initialLiftedState;
-        if (isPaused) return computePausedAction();
+        if (isPaused) {
+          newLiftedState = computePausedAction();
+          if (listener) listener(newLiftedState, liftedAction);
+          return newLiftedState;
+        }
 
         // Auto-commit as new actions come in.
         if (options.maxAge && stagedActionIds.length === options.maxAge) {
@@ -553,7 +559,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       options.shouldCatchErrors
     );
     monitorState = monitorReducer(monitorState, liftedAction);
-    return {
+    newLiftedState = {
       monitorState,
       actionsById,
       nextActionId,
@@ -565,6 +571,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       isLocked,
       isPaused
     };
+    if (listener) listener(newLiftedState, liftedAction);
+    return newLiftedState;
   };
 }
 
