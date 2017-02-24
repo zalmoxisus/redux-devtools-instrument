@@ -833,4 +833,67 @@ describe('instrument', () => {
       'Check your store configuration.'
     );
   });
+
+  describe('External listener', () => {
+    const options = {
+      listener: () => {}
+    };
+    const spy = spyOn(options, 'listener');
+    it('should listen for init action', () => {
+      store = createStore(counter, instrument(undefined, options));
+      expect(spy.calls.length).toBe(1);
+      expect(spy.calls[0].arguments[1]).toEqual({ type: '@@redux/INIT' });
+      expect(spy.calls[0].arguments[0].computedStates).toEqual([{ state: 0 }]);
+      spy.reset();
+    });
+
+    it('should listen for performed action', () => {
+      store = createStore(counter, instrument(undefined, options));
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(1);
+      expect(spy.calls.length).toBe(2);
+      expect(spy.calls[1].arguments[1].type).toBe('PERFORM_ACTION');
+      expect(spy.calls[1].arguments[1].action).toEqual({ type: 'INCREMENT' });
+      expect(spy.calls[1].arguments[0].computedStates).toEqual([{ state: 0 }, { state: 1 }]);
+      spy.reset();
+    });
+
+    it('should listen for lifted action', () => {
+      store = createStore(counter, instrument(undefined, options));
+      liftedStore = store.liftedStore;
+
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'DECREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(1);
+      expect(spy.calls.length).toBe(4);
+
+      liftedStore.dispatch(ActionCreators.jumpToAction(0));
+      expect(store.getState()).toBe(0);
+      expect(spy.calls.length).toBe(5);
+      expect(spy.calls[4].arguments[1]).toEqual({ actionId: 0, type: 'JUMP_TO_ACTION' });
+      expect(spy.calls[4].arguments[0].computedStates)
+        .toEqual([{ state: 0 }, { state: 1 }, { state: 0 }, { state: 1 }]);
+
+      spy.reset();
+    });
+
+    it('should listen for replacing the reducer (hmr)', () => {
+      store = createStore(counter, instrument(undefined, options));
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'DECREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      expect(store.getState()).toBe(1);
+      expect(spy.calls.length).toBe(4);
+
+      store.replaceReducer(doubleCounter);
+      expect(store.getState()).toBe(2);
+      expect(spy.calls.length).toBe(5);
+      expect(spy.calls[4].arguments[1]).toEqual({ type: '@@redux/INIT'});
+      expect(spy.calls[4].arguments[0].computedStates)
+        .toEqual([{ state: 0 }, { state: 2 }, { state: 0 }, { state: 2 }]);
+
+      spy.reset();
+    });
+  });
 });
