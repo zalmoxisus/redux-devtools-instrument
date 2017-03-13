@@ -1,6 +1,6 @@
 import expect, { spyOn } from 'expect';
 import { createStore, compose } from 'redux';
-import instrument, { ActionCreators } from '../src/instrument';
+import instrument, { ActionTypes, ActionCreators } from '../src/instrument';
 import { Observable } from 'rxjs';
 import _ from 'lodash';
 
@@ -101,26 +101,33 @@ describe('instrument', () => {
 
     liftedStore.dispatch(ActionCreators.rollback());
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.ROLLBACK);
   });
 
   it('should reset to initial state', () => {
+    expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.INIT);
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(1);
 
     liftedStore.dispatch(ActionCreators.commit());
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.COMMIT);
 
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
 
     liftedStore.dispatch(ActionCreators.rollback());
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.ROLLBACK);
 
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
 
     liftedStore.dispatch(ActionCreators.reset());
     expect(store.getState()).toBe(0);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.RESET);
   });
 
   it('should toggle an action', () => {
@@ -132,9 +139,11 @@ describe('instrument', () => {
 
     liftedStore.dispatch(ActionCreators.toggleAction(2));
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.TOGGLE_ACTION);
 
     liftedStore.dispatch(ActionCreators.toggleAction(2));
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.TOGGLE_ACTION);
   });
 
   it('should set multiple action skip', () => {
@@ -146,12 +155,15 @@ describe('instrument', () => {
 
     liftedStore.dispatch(ActionCreators.setActionsActive(1, 3, false));
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.SET_ACTIONS_ACTIVE);
 
     liftedStore.dispatch(ActionCreators.setActionsActive(0, 2, true));
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.SET_ACTIONS_ACTIVE);
 
     liftedStore.dispatch(ActionCreators.setActionsActive(0, 1, true));
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.SET_ACTIONS_ACTIVE);
   });
 
   it('should sweep disabled actions', () => {
@@ -174,6 +186,7 @@ describe('instrument', () => {
     expect(store.getState()).toBe(3);
     expect(liftedStore.getState().stagedActionIds).toEqual([0, 1, 3, 4]);
     expect(liftedStore.getState().skippedActionIds).toEqual([]);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.SWEEP);
   });
 
   it('should jump to state', () => {
@@ -181,21 +194,26 @@ describe('instrument', () => {
     store.dispatch({ type: 'DECREMENT' });
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
 
     liftedStore.dispatch(ActionCreators.jumpToState(0));
     expect(store.getState()).toBe(0);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.JUMP_TO_STATE);
 
     liftedStore.dispatch(ActionCreators.jumpToState(1));
     expect(store.getState()).toBe(1);
 
     liftedStore.dispatch(ActionCreators.jumpToState(2));
     expect(store.getState()).toBe(0);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.JUMP_TO_STATE);
 
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(0);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
 
     liftedStore.dispatch(ActionCreators.jumpToState(4));
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.JUMP_TO_STATE);
   });
 
   it('should jump to action', () => {
@@ -203,15 +221,18 @@ describe('instrument', () => {
     store.dispatch({ type: 'DECREMENT' });
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
 
     liftedStore.dispatch(ActionCreators.jumpToAction(0));
     expect(store.getState()).toBe(0);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.JUMP_TO_ACTION);
 
     liftedStore.dispatch(ActionCreators.jumpToAction(1));
     expect(store.getState()).toBe(1);
 
     liftedStore.dispatch(ActionCreators.jumpToAction(10));
     expect(store.getState()).toBe(1);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.JUMP_TO_ACTION);
   });
 
   it('should reorder actions', () => {
@@ -226,6 +247,7 @@ describe('instrument', () => {
     store.liftedStore.dispatch(ActionCreators.reorderAction(4, 1));
     expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 1, 2, 3]);
     expect(store.getState()).toBe(1);
+    expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.REORDER_ACTION);
 
     store.liftedStore.dispatch(ActionCreators.reorderAction(4, 1));
     expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 4, 1, 2, 3]);
@@ -250,6 +272,7 @@ describe('instrument', () => {
     store.liftedStore.dispatch(ActionCreators.reorderAction(0, 1));
     expect(store.liftedStore.getState().stagedActionIds).toEqual([0, 1, 4, 2, 3]);
     expect(store.getState()).toBe(2);
+    expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.REORDER_ACTION);
   });
 
   it('should replace the reducer', () => {
@@ -260,6 +283,7 @@ describe('instrument', () => {
 
     store.replaceReducer(doubleCounter);
     expect(store.getState()).toBe(2);
+    expect(liftedStore.getState().liftedAction.type).toBe(ActionTypes.INIT);
   });
 
   it('should catch and record errors', () => {
@@ -604,6 +628,7 @@ describe('instrument', () => {
     let monitoredStore;
     let monitoredLiftedStore;
     let exportedState;
+    let importedState;
 
     beforeEach(() => {
       monitoredStore = createStore(counter, instrument());
@@ -614,6 +639,13 @@ describe('instrument', () => {
       monitoredStore.dispatch({ type: 'INCREMENT' });
 
       exportedState = monitoredLiftedStore.getState();
+      importedState = Object.assign({}, exportedState, {
+        liftedAction: {
+          type: ActionTypes.IMPORT_STATE,
+          nextLiftedState: exportedState,
+          noRecompute: undefined
+        }
+      });
     });
 
     it('should replay all the steps when a state is imported', () => {
@@ -621,7 +653,7 @@ describe('instrument', () => {
       let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(exportedState));
-      expect(importMonitoredLiftedStore.getState()).toEqual(exportedState);
+      expect(importMonitoredLiftedStore.getState()).toEqual(importedState);
     });
 
     it('should replace the existing action log with the one imported', () => {
@@ -632,7 +664,7 @@ describe('instrument', () => {
       importMonitoredStore.dispatch({ type: 'DECREMENT' });
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(exportedState));
-      expect(importMonitoredLiftedStore.getState()).toEqual(exportedState);
+      expect(importMonitoredLiftedStore.getState()).toEqual(importedState);
     });
 
     it('should allow for state to be imported without replaying actions', () => {
@@ -645,7 +677,12 @@ describe('instrument', () => {
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(noComputedExportedState, true));
 
       let expectedImportedState = Object.assign({}, noComputedExportedState, {
-        computedStates: undefined
+        computedStates: undefined,
+        liftedAction: {
+          type: ActionTypes.IMPORT_STATE,
+          nextLiftedState: noComputedExportedState,
+          noRecompute: true
+        }
       });
       expect(importMonitoredLiftedStore.getState()).toEqual(expectedImportedState);
     });
@@ -662,7 +699,7 @@ describe('instrument', () => {
   describe('Import Actions', () => {
     let monitoredStore;
     let monitoredLiftedStore;
-    let exportedState;
+    let importedState;
     let savedActions = [
       { type: 'INCREMENT' },
       { type: 'INCREMENT' },
@@ -675,7 +712,17 @@ describe('instrument', () => {
       // Pass actions through component
       savedActions.forEach(action => monitoredStore.dispatch(action));
       // get the final state
-      exportedState = filterTimestamps(monitoredLiftedStore.getState());
+      const exportedState = filterTimestamps(monitoredLiftedStore.getState());
+      importedState = Object.assign({},
+        exportedState,
+        {
+          liftedAction: {
+            type: ActionTypes.IMPORT_STATE,
+            nextLiftedState: savedActions,
+            noRecompute: undefined
+          }
+        }
+      );
     });
 
     it('should replay all the steps when a state is imported', () => {
@@ -683,7 +730,7 @@ describe('instrument', () => {
       let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
-      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(importedState);
     });
 
     it('should replace the existing action log with the one imported', () => {
@@ -694,7 +741,7 @@ describe('instrument', () => {
       importMonitoredStore.dispatch({ type: 'DECREMENT' });
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
-      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(importedState);
     });
   });
 
@@ -702,12 +749,14 @@ describe('instrument', () => {
     it('should lock', () => {
       store.dispatch({ type: 'INCREMENT' });
       store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: true });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.LOCK_CHANGES);
       expect(store.liftedStore.getState().isLocked).toBe(true);
       expect(store.liftedStore.getState().nextActionId).toBe(2);
       expect(store.getState()).toBe(1);
 
       store.dispatch({ type: 'INCREMENT' });
       expect(store.liftedStore.getState().nextActionId).toBe(2);
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.LOCK_CHANGES);
       expect(store.getState()).toBe(1);
 
       liftedStore.dispatch(ActionCreators.toggleAction(1));
@@ -716,16 +765,19 @@ describe('instrument', () => {
       expect(store.getState()).toBe(1);
 
       store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: false });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.LOCK_CHANGES);
       expect(store.liftedStore.getState().isLocked).toBe(false);
       expect(store.liftedStore.getState().nextActionId).toBe(2);
 
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.getState()).toBe(2);
     });
     it('should start locked', () => {
       store = createStore(counter, instrument(undefined, { shouldStartLocked: true }));
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.INIT);
       expect(store.liftedStore.getState().isLocked).toBe(true);
       expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.getState()).toBe(0);
@@ -736,9 +788,11 @@ describe('instrument', () => {
       expect(store.getState()).toBe(2);
 
       store.liftedStore.dispatch({ type: 'LOCK_CHANGES', status: false });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.LOCK_CHANGES);
       expect(store.liftedStore.getState().isLocked).toBe(false);
 
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(4);
       expect(store.getState()).toBe(3);
     });
@@ -753,6 +807,7 @@ describe('instrument', () => {
       expect(store.getState()).toBe(2);
 
       store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PAUSE_RECORDING);
       expect(store.liftedStore.getState().isPaused).toBe(true);
       expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.liftedStore.getState().actionsById[0].action).toEqual({ type: '@@INIT' });
@@ -760,49 +815,60 @@ describe('instrument', () => {
 
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.liftedStore.getState().actionsById[0].action).toEqual({ type: '@@INIT' });
       expect(store.getState()).toBe(4);
 
       store.liftedStore.dispatch(ActionCreators.pauseRecording(false));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PAUSE_RECORDING);
       expect(store.liftedStore.getState().isPaused).toBe(false);
 
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.liftedStore.getState().actionsById[2].action).toEqual({ type: 'INCREMENT' });
       expect(store.getState()).toBe(6);
     });
     it('should maintain the history while paused', () => {
       store = createStore(counter, instrument(undefined, { pauseActionType: '@@PAUSED' }));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.INIT);
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
       expect(store.getState()).toBe(2);
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(3);
       expect(store.liftedStore.getState().isPaused).toBe(false);
 
       store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PAUSE_RECORDING);
       expect(store.liftedStore.getState().isPaused).toBe(true);
       expect(store.liftedStore.getState().nextActionId).toBe(4);
       expect(store.getState()).toBe(2);
 
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(4);
       store.dispatch({ type: 'INCREMENT' });
       expect(store.liftedStore.getState().nextActionId).toBe(4);
       expect(store.getState()).toBe(4);
 
       store.liftedStore.dispatch(ActionCreators.pauseRecording(false));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PAUSE_RECORDING);
       expect(store.liftedStore.getState().isPaused).toBe(false);
       expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.getState()).toBe(4);
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(2);
       expect(store.getState()).toBe(5);
 
       store.liftedStore.dispatch(ActionCreators.commit());
       store.liftedStore.dispatch(ActionCreators.pauseRecording(true));
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PAUSE_RECORDING);
       store.dispatch({ type: 'INCREMENT' });
+      expect(store.liftedStore.getState().liftedAction.type).toBe(ActionTypes.PERFORM_ACTION);
       expect(store.liftedStore.getState().nextActionId).toBe(1);
       expect(store.getState()).toBe(6);
     });

@@ -4,6 +4,7 @@ import isPlainObject from 'lodash/isPlainObject';
 import $$observable from 'symbol-observable';
 
 export const ActionTypes = {
+  INIT: '@@redux/INIT',
   PERFORM_ACTION: 'PERFORM_ACTION',
   RESET: 'RESET',
   ROLLBACK: 'ROLLBACK',
@@ -268,6 +269,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           monitorState,
           actionsById: { 0: liftAction(INIT_ACTION) },
           nextActionId: 1,
+          liftedAction,
           stagedActionIds: [0],
           skippedActionIds: [],
           committedState: computedState.state,
@@ -291,6 +293,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           [nextActionId - 1]: liftAction({ type: options.pauseActionType })
         },
         nextActionId,
+        liftedAction,
         stagedActionIds,
         skippedActionIds,
         committedState,
@@ -505,7 +508,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         computedStates = [];
         break;
       }
-      case '@@redux/INIT': {
+      case ActionTypes.INIT: {
         if (options.shouldHotReload === false && liftedState) {
           return liftedState;
         }
@@ -557,6 +560,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       monitorState,
       actionsById,
       nextActionId,
+      liftedAction,
       stagedActionIds,
       skippedActionIds,
       committedState,
