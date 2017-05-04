@@ -275,7 +275,7 @@ describe('instrument', () => {
     store.dispatch({ type: 'INCREMENT' });
     expect(store.getState()).toBe(2);
 
-    store.replaceReducer(state => ({ test: true }));
+    store.replaceReducer(() => ({ test: true }));
     expect(store.getState()).toEqual({ test: true });
   });
 
