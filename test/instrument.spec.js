@@ -262,6 +262,23 @@ describe('instrument', () => {
     expect(store.getState()).toBe(2);
   });
 
+  it('should replace the reducer without recomputing actions', () => {
+    store = createStore(counter, instrument(undefined, { shouldHotReload: false }));
+    expect(store.getState()).toBe(0);
+    store.dispatch({ type: 'INCREMENT' });
+    store.dispatch({ type: 'DECREMENT' });
+    store.dispatch({ type: 'INCREMENT' });
+    expect(store.getState()).toBe(1);
+
+    store.replaceReducer(doubleCounter);
+    expect(store.getState()).toBe(0);
+    store.dispatch({ type: 'INCREMENT' });
+    expect(store.getState()).toBe(2);
+
+    store.replaceReducer(state => ({ test: true }));
+    expect(store.getState()).toEqual({ test: true });
+  });
+
   it('should catch and record errors', () => {
     let spy = spyOn(console, 'error');
     let storeWithBug = createStore(

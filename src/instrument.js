@@ -506,8 +506,14 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
         break;
       }
       case '@@redux/INIT': {
-        if (options.shouldHotReload === false && liftedState) {
-          return liftedState;
+        if (options.shouldHotReload === false) {
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          committedState = initialCommittedState;
+          currentStateIndex = 0;
+          computedStates = [];
         }
 
         // Recompute states on hot reload and init.
