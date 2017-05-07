@@ -271,9 +271,9 @@ describe('instrument', () => {
     expect(store.getState()).toBe(1);
 
     store.replaceReducer(doubleCounter);
-    expect(store.getState()).toBe(0);
+    expect(store.getState()).toBe(1);
     store.dispatch({ type: 'INCREMENT' });
-    expect(store.getState()).toBe(2);
+    expect(store.getState()).toBe(3);
 
     store.replaceReducer(() => ({ test: true }));
     expect(store.getState()).toEqual({ test: true });

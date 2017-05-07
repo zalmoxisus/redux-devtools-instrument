@@ -511,7 +511,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           nextActionId = 1;
           stagedActionIds = [0];
           skippedActionIds = [];
-          committedState = initialCommittedState;
+          committedState = computedStates.length === 0 ? initialCommittedState :
+            computedStates[currentStateIndex].state;
           currentStateIndex = 0;
           computedStates = [];
         }
