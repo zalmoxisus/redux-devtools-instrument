@@ -306,246 +306,245 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     // value whenever we feel like we don't have to recompute the states.
     let minInvalidatedStateIndex = 0;
 
-    switch (liftedAction.type) {
-      case ActionTypes.PERFORM_ACTION: {
-        if (isLocked) return liftedState || initialLiftedState;
-        if (isPaused) return computePausedAction();
-
-        // Auto-commit as new actions come in.
-        if (options.maxAge && stagedActionIds.length === options.maxAge) {
-          commitExcessActions(1);
-        }
-
-        if (currentStateIndex === stagedActionIds.length - 1) {
-          currentStateIndex++;
-        }
-        const actionId = nextActionId++;
-        // Mutation! This is the hottest path, and we optimize on purpose.
-        // It is safe because we set a new key in a cache dictionary.
-        actionsById[actionId] = liftedAction;
-        stagedActionIds = [...stagedActionIds, actionId];
-        // Optimization: we know that only the new action needs computing.
-        minInvalidatedStateIndex = stagedActionIds.length - 1;
-        break;
-      }
-      case ActionTypes.RESET: {
-        // Get back to the state the store was created with.
+    if (liftedAction.type.indexOf('@@redux/INIT') === 0) {
+      if (options.shouldHotReload === false) {
         actionsById = { 0: liftAction(INIT_ACTION) };
         nextActionId = 1;
         stagedActionIds = [0];
         skippedActionIds = [];
-        committedState = initialCommittedState;
-        currentStateIndex = 0;
-        computedStates = [];
-        break;
-      }
-      case ActionTypes.COMMIT: {
-        // Consider the last committed state the new starting point.
-        // Squash any staged actions into a single committed state.
-        actionsById = { 0: liftAction(INIT_ACTION) };
-        nextActionId = 1;
-        stagedActionIds = [0];
-        skippedActionIds = [];
-        committedState = computedStates[currentStateIndex].state;
-        currentStateIndex = 0;
-        computedStates = [];
-        break;
-      }
-      case ActionTypes.ROLLBACK: {
-        // Forget about any staged actions.
-        // Start again from the last committed state.
-        actionsById = { 0: liftAction(INIT_ACTION) };
-        nextActionId = 1;
-        stagedActionIds = [0];
-        skippedActionIds = [];
-        currentStateIndex = 0;
-        computedStates = [];
-        break;
-      }
-      case ActionTypes.TOGGLE_ACTION: {
-        // Toggle whether an action with given ID is skipped.
-        // Being skipped means it is a no-op during the computation.
-        const { id: actionId } = liftedAction;
-        const index = skippedActionIds.indexOf(actionId);
-        if (index === -1) {
-          skippedActionIds = [actionId, ...skippedActionIds];
-        } else {
-          skippedActionIds = skippedActionIds.filter(id => id !== actionId);
-        }
-        // Optimization: we know history before this action hasn't changed
-        minInvalidatedStateIndex = stagedActionIds.indexOf(actionId);
-        break;
-      }
-      case ActionTypes.SET_ACTIONS_ACTIVE: {
-        // Toggle whether an action with given ID is skipped.
-        // Being skipped means it is a no-op during the computation.
-        const { start, end, active } = liftedAction;
-        const actionIds = [];
-        for (let i = start; i < end; i++) actionIds.push(i);
-        if (active) {
-          skippedActionIds = difference(skippedActionIds, actionIds);
-        } else {
-          skippedActionIds = union(skippedActionIds, actionIds);
-        }
-
-        // Optimization: we know history before this action hasn't changed
-        minInvalidatedStateIndex = stagedActionIds.indexOf(start);
-        break;
-      }
-      case ActionTypes.JUMP_TO_STATE: {
-        // Without recomputing anything, move the pointer that tell us
-        // which state is considered the current one. Useful for sliders.
-        currentStateIndex = liftedAction.index;
-        // Optimization: we know the history has not changed.
-        minInvalidatedStateIndex = Infinity;
-        break;
-      }
-      case ActionTypes.JUMP_TO_ACTION: {
-        // Jumps to a corresponding state to a specific action.
-        // Useful when filtering actions.
-        const index = stagedActionIds.indexOf(liftedAction.actionId);
-        if (index !== -1) currentStateIndex = index;
-        minInvalidatedStateIndex = Infinity;
-        break;
-      }
-      case ActionTypes.SWEEP: {
-        // Forget any actions that are currently being skipped.
-        stagedActionIds = difference(stagedActionIds, skippedActionIds);
-        skippedActionIds = [];
-        currentStateIndex = Math.min(currentStateIndex, stagedActionIds.length - 1);
-        break;
-      }
-      case ActionTypes.REORDER_ACTION: {
-        // Recompute actions in a new order.
-        const actionId = liftedAction.actionId;
-        const idx = stagedActionIds.indexOf(actionId);
-        // do nothing in case the action is already removed or trying to move the first action
-        if (idx < 1) break;
-        const beforeActionId = liftedAction.beforeActionId;
-        let newIdx = stagedActionIds.indexOf(beforeActionId);
-        if (newIdx < 1) { // move to the beginning or to the end
-          const count = stagedActionIds.length;
-          newIdx = beforeActionId > stagedActionIds[count - 1] ? count : 1;
-        }
-        const diff = idx - newIdx;
-
-        if (diff > 0) { // move left
-          stagedActionIds = [
-            ...stagedActionIds.slice(0, newIdx),
-            actionId,
-            ...stagedActionIds.slice(newIdx, idx),
-            ...stagedActionIds.slice(idx + 1)
-          ];
-          minInvalidatedStateIndex = newIdx;
-        } else if (diff < 0) { // move right
-          stagedActionIds = [
-            ...stagedActionIds.slice(0, idx),
-            ...stagedActionIds.slice(idx + 1, newIdx),
-            actionId,
-            ...stagedActionIds.slice(newIdx)
-          ];
-          minInvalidatedStateIndex = idx;
-        }
-        break;
-      }
-      case ActionTypes.IMPORT_STATE: {
-        if (Array.isArray(liftedAction.nextLiftedState)) {
-          // recompute array of actions
-          actionsById = { 0: liftAction(INIT_ACTION) };
-          nextActionId = 1;
-          stagedActionIds = [0];
-          skippedActionIds = [];
-          currentStateIndex = liftedAction.nextLiftedState.length;
-          computedStates = [];
-          committedState = liftedAction.preloadedState;
-          minInvalidatedStateIndex = 0;
-          // iterate through actions
-          liftedAction.nextLiftedState.forEach(action => {
-            actionsById[nextActionId] = liftAction(action);
-            stagedActionIds.push(nextActionId);
-            nextActionId++;
-          });
-        } else {
-          // Completely replace everything.
-          ({
-            monitorState,
-            actionsById,
-            nextActionId,
-            stagedActionIds,
-            skippedActionIds,
-            committedState,
-            currentStateIndex,
-            computedStates
-          } = liftedAction.nextLiftedState);
-
-          if (liftedAction.noRecompute) {
-            minInvalidatedStateIndex = Infinity;
-          }
-        }
-
-        break;
-      }
-      case ActionTypes.LOCK_CHANGES: {
-        isLocked = liftedAction.status;
-        minInvalidatedStateIndex = Infinity;
-        break;
-      }
-      case ActionTypes.PAUSE_RECORDING: {
-        isPaused = liftedAction.status;
-        if (isPaused) {
-          return computePausedAction(true);
-        }
-        // Commit when unpausing
-        actionsById = { 0: liftAction(INIT_ACTION) };
-        nextActionId = 1;
-        stagedActionIds = [0];
-        skippedActionIds = [];
-        committedState = computedStates[currentStateIndex].state;
-        currentStateIndex = 0;
-        computedStates = [];
-        break;
-      }
-      case '@@redux/INIT': {
-        if (options.shouldHotReload === false) {
-          actionsById = { 0: liftAction(INIT_ACTION) };
-          nextActionId = 1;
-          stagedActionIds = [0];
-          skippedActionIds = [];
-          committedState = computedStates.length === 0 ? initialCommittedState :
+        committedState = computedStates.length === 0 ? initialCommittedState :
             computedStates[currentStateIndex].state;
+        currentStateIndex = 0;
+        computedStates = [];
+      }
+
+      // Recompute states on hot reload and init.
+      minInvalidatedStateIndex = 0;
+
+      if (options.maxAge && stagedActionIds.length > options.maxAge) {
+        // States must be recomputed before committing excess.
+        computedStates = recomputeStates(
+          computedStates,
+          minInvalidatedStateIndex,
+          reducer,
+          committedState,
+          actionsById,
+          stagedActionIds,
+          skippedActionIds,
+          options.shouldCatchErrors
+        );
+
+        commitExcessActions(stagedActionIds.length - options.maxAge);
+
+        // Avoid double computation.
+        minInvalidatedStateIndex = Infinity;
+      }
+    } else {
+      switch (liftedAction.type) {
+        case ActionTypes.PERFORM_ACTION: {
+          if (isLocked) return liftedState || initialLiftedState;
+          if (isPaused) return computePausedAction();
+
+          // Auto-commit as new actions come in.
+          if (options.maxAge && stagedActionIds.length === options.maxAge) {
+            commitExcessActions(1);
+          }
+
+          if (currentStateIndex === stagedActionIds.length - 1) {
+            currentStateIndex++;
+          }
+          const actionId = nextActionId++;
+          // Mutation! This is the hottest path, and we optimize on purpose.
+          // It is safe because we set a new key in a cache dictionary.
+          actionsById[actionId] = liftedAction;
+          stagedActionIds = [...stagedActionIds, actionId];
+          // Optimization: we know that only the new action needs computing.
+          minInvalidatedStateIndex = stagedActionIds.length - 1;
+          break;
+        }
+        case ActionTypes.RESET: {
+          // Get back to the state the store was created with.
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          committedState = initialCommittedState;
           currentStateIndex = 0;
           computedStates = [];
+          break;
         }
+        case ActionTypes.COMMIT: {
+          // Consider the last committed state the new starting point.
+          // Squash any staged actions into a single committed state.
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          committedState = computedStates[currentStateIndex].state;
+          currentStateIndex = 0;
+          computedStates = [];
+          break;
+        }
+        case ActionTypes.ROLLBACK: {
+          // Forget about any staged actions.
+          // Start again from the last committed state.
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          currentStateIndex = 0;
+          computedStates = [];
+          break;
+        }
+        case ActionTypes.TOGGLE_ACTION: {
+          // Toggle whether an action with given ID is skipped.
+          // Being skipped means it is a no-op during the computation.
+          const { id: actionId } = liftedAction;
+          const index = skippedActionIds.indexOf(actionId);
+          if (index === -1) {
+            skippedActionIds = [actionId, ...skippedActionIds];
+          } else {
+            skippedActionIds = skippedActionIds.filter(id => id !== actionId);
+          }
+          // Optimization: we know history before this action hasn't changed
+          minInvalidatedStateIndex = stagedActionIds.indexOf(actionId);
+          break;
+        }
+        case ActionTypes.SET_ACTIONS_ACTIVE: {
+          // Toggle whether an action with given ID is skipped.
+          // Being skipped means it is a no-op during the computation.
+          const { start, end, active } = liftedAction;
+          const actionIds = [];
+          for (let i = start; i < end; i++) actionIds.push(i);
+          if (active) {
+            skippedActionIds = difference(skippedActionIds, actionIds);
+          } else {
+            skippedActionIds = union(skippedActionIds, actionIds);
+          }
 
-        // Recompute states on hot reload and init.
-        minInvalidatedStateIndex = 0;
-
-        if (options.maxAge && stagedActionIds.length > options.maxAge) {
-          // States must be recomputed before committing excess.
-          computedStates = recomputeStates(
-            computedStates,
-            minInvalidatedStateIndex,
-            reducer,
-            committedState,
-            actionsById,
-            stagedActionIds,
-            skippedActionIds,
-            options.shouldCatchErrors
-          );
-
-          commitExcessActions(stagedActionIds.length - options.maxAge);
-
-          // Avoid double computation.
+          // Optimization: we know history before this action hasn't changed
+          minInvalidatedStateIndex = stagedActionIds.indexOf(start);
+          break;
+        }
+        case ActionTypes.JUMP_TO_STATE: {
+          // Without recomputing anything, move the pointer that tell us
+          // which state is considered the current one. Useful for sliders.
+          currentStateIndex = liftedAction.index;
+          // Optimization: we know the history has not changed.
           minInvalidatedStateIndex = Infinity;
+          break;
         }
+        case ActionTypes.JUMP_TO_ACTION: {
+          // Jumps to a corresponding state to a specific action.
+          // Useful when filtering actions.
+          const index = stagedActionIds.indexOf(liftedAction.actionId);
+          if (index !== -1) currentStateIndex = index;
+          minInvalidatedStateIndex = Infinity;
+          break;
+        }
+        case ActionTypes.SWEEP: {
+          // Forget any actions that are currently being skipped.
+          stagedActionIds = difference(stagedActionIds, skippedActionIds);
+          skippedActionIds = [];
+          currentStateIndex = Math.min(currentStateIndex, stagedActionIds.length - 1);
+          break;
+        }
+        case ActionTypes.REORDER_ACTION: {
+          // Recompute actions in a new order.
+          const actionId = liftedAction.actionId;
+          const idx = stagedActionIds.indexOf(actionId);
+          // do nothing in case the action is already removed or trying to move the first action
+          if (idx < 1) break;
+          const beforeActionId = liftedAction.beforeActionId;
+          let newIdx = stagedActionIds.indexOf(beforeActionId);
+          if (newIdx < 1) { // move to the beginning or to the end
+            const count = stagedActionIds.length;
+            newIdx = beforeActionId > stagedActionIds[count - 1] ? count : 1;
+          }
+          const diff = idx - newIdx;
 
-        break;
-      }
-      default: {
-        // If the action is not recognized, it's a monitor action.
-        // Optimization: a monitor action can't change history.
-        minInvalidatedStateIndex = Infinity;
-        break;
+          if (diff > 0) { // move left
+            stagedActionIds = [
+              ...stagedActionIds.slice(0, newIdx),
+              actionId,
+              ...stagedActionIds.slice(newIdx, idx),
+              ...stagedActionIds.slice(idx + 1)
+            ];
+            minInvalidatedStateIndex = newIdx;
+          } else if (diff < 0) { // move right
+            stagedActionIds = [
+              ...stagedActionIds.slice(0, idx),
+              ...stagedActionIds.slice(idx + 1, newIdx),
+              actionId,
+              ...stagedActionIds.slice(newIdx)
+            ];
+            minInvalidatedStateIndex = idx;
+          }
+          break;
+        }
+        case ActionTypes.IMPORT_STATE: {
+          if (Array.isArray(liftedAction.nextLiftedState)) {
+            // recompute array of actions
+            actionsById = { 0: liftAction(INIT_ACTION) };
+            nextActionId = 1;
+            stagedActionIds = [0];
+            skippedActionIds = [];
+            currentStateIndex = liftedAction.nextLiftedState.length;
+            computedStates = [];
+            committedState = liftedAction.preloadedState;
+            minInvalidatedStateIndex = 0;
+            // iterate through actions
+            liftedAction.nextLiftedState.forEach(action => {
+              actionsById[nextActionId] = liftAction(action);
+              stagedActionIds.push(nextActionId);
+              nextActionId++;
+            });
+          } else {
+            // Completely replace everything.
+            ({
+              monitorState,
+              actionsById,
+              nextActionId,
+              stagedActionIds,
+              skippedActionIds,
+              committedState,
+              currentStateIndex,
+              computedStates
+            } = liftedAction.nextLiftedState);
+
+            if (liftedAction.noRecompute) {
+              minInvalidatedStateIndex = Infinity;
+            }
+          }
+
+          break;
+        }
+        case ActionTypes.LOCK_CHANGES: {
+          isLocked = liftedAction.status;
+          minInvalidatedStateIndex = Infinity;
+          break;
+        }
+        case ActionTypes.PAUSE_RECORDING: {
+          isPaused = liftedAction.status;
+          if (isPaused) {
+            return computePausedAction(true);
+          }
+          // Commit when unpausing
+          actionsById = { 0: liftAction(INIT_ACTION) };
+          nextActionId = 1;
+          stagedActionIds = [0];
+          skippedActionIds = [];
+          committedState = computedStates[currentStateIndex].state;
+          currentStateIndex = 0;
+          computedStates = [];
+          break;
+        }
+        default: {
+          // If the action is not recognized, it's a monitor action.
+          // Optimization: a monitor action can't change history.
+          minInvalidatedStateIndex = Infinity;
+          break;
+        }
       }
     }
 
