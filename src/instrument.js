@@ -306,7 +306,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     // value whenever we feel like we don't have to recompute the states.
     let minInvalidatedStateIndex = 0;
 
-    if (liftedAction.type.indexOf('@@redux/INIT') === 0) {
+    if (/^@@redux\/(INIT|REPLACE)/.test(liftedAction.type)) {
       if (options.shouldHotReload === false) {
         actionsById = { 0: liftAction(INIT_ACTION) };
         nextActionId = 1;
