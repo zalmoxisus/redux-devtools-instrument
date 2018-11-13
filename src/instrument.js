@@ -23,7 +23,7 @@ export const ActionTypes = {
  * Action creators to change the History state.
  */
 export const ActionCreators = {
-  performAction(action) {
+  performAction(action, shouldIncludeCallstack) {
     if (!isPlainObject(action)) {
       throw new Error(
         'Actions must be plain objects. ' +
@@ -38,7 +38,10 @@ export const ActionCreators = {
       );
     }
 
-    return { type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now(), stack: Error().stack};
+    return {
+      type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now(),
+      stack: shouldIncludeCallstack ? Error().stack : undefined
+    };
   },
 
   reset() {
@@ -185,8 +188,8 @@ function recomputeStates(
 /**
  * Lifts an app's action into an action on the lifted store.
  */
-export function liftAction(action) {
-  return ActionCreators.performAction(action);
+export function liftAction(action, shouldIncludeCallstack) {
+  return ActionCreators.performAction(action, shouldIncludeCallstack);
 }
 
 /**
@@ -495,7 +498,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
             minInvalidatedStateIndex = 0;
             // iterate through actions
             liftedAction.nextLiftedState.forEach(action => {
-              actionsById[nextActionId] = liftAction(action);
+              actionsById[nextActionId] = liftAction(action, options.shouldIncludeCallstack);
               stagedActionIds.push(nextActionId);
               nextActionId++;
             });
@@ -586,8 +589,9 @@ export function unliftState(liftedState) {
 /**
  * Provides an app's view into the lifted store.
  */
-export function unliftStore(liftedStore, liftReducer) {
+export function unliftStore(liftedStore, liftReducer, options) {
   let lastDefinedState;
+  const { shouldIncludeCallstack } = options;
 
   function getState() {
     const state = unliftState(liftedStore.getState());
@@ -603,7 +607,7 @@ export function unliftStore(liftedStore, liftReducer) {
     liftedStore,
 
     dispatch(action) {
-      liftedStore.dispatch(liftAction(action));
+      liftedStore.dispatch(liftAction(action, shouldIncludeCallstack));
       return action;
     },
 
@@ -674,6 +678,6 @@ export default function instrument(monitorReducer = () => null, options = {}) {
       );
     }
 
-    return unliftStore(liftedStore, liftReducer);
+    return unliftStore(liftedStore, liftReducer, options);
   };
 }

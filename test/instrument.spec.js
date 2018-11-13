@@ -666,6 +666,23 @@ describe('instrument', () => {
       });
       expect(importMonitoredLiftedStore.getState()).toEqual(expectedImportedState);
     });
+
+    it('should include callstack', () => {
+      let importMonitoredStore = createStore(counter, instrument(undefined, { shouldIncludeCallstack: true }));
+      let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
+
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+
+      const oldState = importMonitoredLiftedStore.getState();
+      expect(oldState.actionsById[0].stack).toBe(undefined);
+      expect(oldState.actionsById[1].stack).toBeA('string');
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(oldState));
+      expect(importMonitoredLiftedStore.getState()).toEqual(oldState);
+      expect(importMonitoredLiftedStore.getState().actionsById[0].stack).toBe(undefined);
+      expect(importMonitoredLiftedStore.getState().actionsById[1]).toEqual(oldState.actionsById[1]);
+    });
   });
 
   function filterStackAndTimestamps(state) {
@@ -712,6 +729,19 @@ describe('instrument', () => {
       importMonitoredStore.dispatch({ type: 'DECREMENT' });
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
+      expect(filterStackAndTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+    });
+
+    it('should include callstack', () => {
+      let importMonitoredStore = createStore(counter, instrument(undefined, { shouldIncludeCallstack: true }));
+      let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
+
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+      importMonitoredStore.dispatch({ type: 'DECREMENT' });
+
+      importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
+      expect(importMonitoredLiftedStore.getState().actionsById[0].stack).toBe(undefined);
+      expect(importMonitoredLiftedStore.getState().actionsById[1].stack).toBeA('string');
       expect(filterStackAndTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
     });
   });
