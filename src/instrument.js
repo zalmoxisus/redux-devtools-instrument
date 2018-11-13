@@ -3,8 +3,6 @@ import union from 'lodash/union';
 import isPlainObject from 'lodash/isPlainObject';
 import $$observable from 'symbol-observable';
 
-import {serializeError} from './serializeError';
-
 export const ActionTypes = {
   PERFORM_ACTION: 'PERFORM_ACTION',
   RESET: 'RESET',
@@ -40,7 +38,7 @@ export const ActionCreators = {
       );
     }
 
-    return { type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now(), stack: serializeError(new Error())};
+    return { type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now(), stack: Error().stack};
   },
 
   reset() {
