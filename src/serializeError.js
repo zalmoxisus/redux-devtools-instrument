@@ -1,57 +1,57 @@
 // Inlined version of `serializeError` by Sindre Sorhus
 // https://github.com/sindresorhus/serialize-error
 export const serializeError = value => {
-    if (typeof value === 'object') {
-        return destroyCircular(value, []);
-    }
+  if (typeof value === 'object') {
+    return destroyCircular(value, []);
+  }
 
-    // People sometimes throw things besides Error objects, so…
+  // People sometimes throw things besides Error objects, so…
 
-    if (typeof value === 'function') {
-        // JSON.stringify discards functions. We do too, unless a function is thrown directly.
-        return `[Function: ${(value.name || 'anonymous')}]`;
-    }
+  if (typeof value === 'function') {
+    // JSON.stringify discards functions. We do too, unless a function is thrown directly.
+    return `[Function: ${(value.name || 'anonymous')}]`;
+  }
 
-    return value;
+  return value;
 };
 
 // https://www.npmjs.com/package/destroy-circular
 function destroyCircular(from, seen) {
-    const to = Array.isArray(from) ? [] : {};
+  const to = Array.isArray(from) ? [] : {};
 
-    seen.push(from);
+  seen.push(from);
 
-    for (const key of Object.keys(from)) {
-        const value = from[key];
+  for (const key of Object.keys(from)) {
+    const value = from[key];
 
-        if (typeof value === 'function') {
-            continue;
-        }
-
-        if (!value || typeof value !== 'object') {
-            to[key] = value;
-            continue;
-        }
-
-        if (seen.indexOf(from[key]) === -1) {
-            to[key] = destroyCircular(from[key], seen.slice(0));
-            continue;
-        }
-
-        to[key] = '[Circular]';
+    if (typeof value === 'function') {
+      continue;
     }
 
-    if (typeof from.name === 'string') {
-        to.name = from.name;
+    if (!value || typeof value !== 'object') {
+      to[key] = value;
+      continue;
     }
 
-    if (typeof from.message === 'string') {
-        to.message = from.message;
+    if (seen.indexOf(from[key]) === -1) {
+      to[key] = destroyCircular(from[key], seen.slice(0));
+      continue;
     }
 
-    if (typeof from.stack === 'string') {
-        to.stack = from.stack;
-    }
+    to[key] = '[Circular]';
+  }
 
-    return to;
+  if (typeof from.name === 'string') {
+    to.name = from.name;
+  }
+
+  if (typeof from.message === 'string') {
+    to.message = from.message;
+  }
+
+  if (typeof from.stack === 'string') {
+    to.stack = from.stack;
+  }
+
+  return to;
 }

@@ -3,7 +3,7 @@ import union from 'lodash/union';
 import isPlainObject from 'lodash/isPlainObject';
 import $$observable from 'symbol-observable';
 
-import {serializeError} from "./serializeError";
+import {serializeError} from './serializeError';
 
 export const ActionTypes = {
   PERFORM_ACTION: 'PERFORM_ACTION',
