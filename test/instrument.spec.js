@@ -668,9 +668,10 @@ describe('instrument', () => {
     });
   });
 
-  function filterTimestamps(state) {
+  function filterStackAndTimestamps(state) {
     state.actionsById = _.mapValues(state.actionsById, (action) => {
       delete action.timestamp;
+      delete action.stack;
       return action;
     });
     return state;
@@ -692,7 +693,7 @@ describe('instrument', () => {
       // Pass actions through component
       savedActions.forEach(action => monitoredStore.dispatch(action));
       // get the final state
-      exportedState = filterTimestamps(monitoredLiftedStore.getState());
+      exportedState = filterStackAndTimestamps(monitoredLiftedStore.getState());
     });
 
     it('should replay all the steps when a state is imported', () => {
@@ -700,7 +701,7 @@ describe('instrument', () => {
       let importMonitoredLiftedStore = importMonitoredStore.liftedStore;
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
-      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+      expect(filterStackAndTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
     });
 
     it('should replace the existing action log with the one imported', () => {
@@ -711,7 +712,7 @@ describe('instrument', () => {
       importMonitoredStore.dispatch({ type: 'DECREMENT' });
 
       importMonitoredLiftedStore.dispatch(ActionCreators.importState(savedActions));
-      expect(filterTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
+      expect(filterStackAndTimestamps(importMonitoredLiftedStore.getState())).toEqual(exportedState);
     });
   });
 
