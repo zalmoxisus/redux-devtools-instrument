@@ -610,6 +610,30 @@ describe('instrument', () => {
       spy.restore();
     });
 
+    it('should use dynamic maxAge', () => {
+      store = createStore(counter, instrument(undefined, { maxAge: () => 3 }));
+
+      store.dispatch({ type: 'INCREMENT' });
+      store.dispatch({ type: 'INCREMENT' });
+      let liftedStoreState = store.liftedStore.getState();
+
+      expect(store.getState()).toBe(2);
+      expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
+      expect(liftedStoreState.committedState).toBe(undefined);
+      expect(liftedStoreState.stagedActionIds).toInclude(1);
+
+      // Trigger auto-commit.
+      store.dispatch({ type: 'INCREMENT' });
+      liftedStoreState = store.liftedStore.getState();
+
+      expect(store.getState()).toBe(3);
+      expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
+      expect(liftedStoreState.stagedActionIds).toExclude(1);
+      expect(liftedStoreState.computedStates[0].state).toBe(1);
+      expect(liftedStoreState.committedState).toBe(1);
+      expect(liftedStoreState.currentStateIndex).toBe(2);
+    });
+
     it('should throw error when maxAge < 2', () => {
       expect(() => {
         createStore(counter, instrument(undefined, { maxAge: 1 }));
