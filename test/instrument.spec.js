@@ -611,7 +611,8 @@ describe('instrument', () => {
     });
 
     it('should use dynamic maxAge', () => {
-      store = createStore(counter, instrument(undefined, { maxAge: () => 3 }));
+      let max = 3;
+      store = createStore(counter, instrument(undefined, { maxAge: () => max }));
 
       store.dispatch({ type: 'INCREMENT' });
       store.dispatch({ type: 'INCREMENT' });
@@ -631,6 +632,38 @@ describe('instrument', () => {
       expect(liftedStoreState.stagedActionIds).toExclude(1);
       expect(liftedStoreState.computedStates[0].state).toBe(1);
       expect(liftedStoreState.committedState).toBe(1);
+      expect(liftedStoreState.currentStateIndex).toBe(2);
+
+      max = 4;
+      store.dispatch({ type: 'INCREMENT' });
+      liftedStoreState = store.liftedStore.getState();
+
+      expect(store.getState()).toBe(4);
+      expect(Object.keys(liftedStoreState.actionsById).length).toBe(4);
+      expect(liftedStoreState.stagedActionIds).toExclude(1);
+      expect(liftedStoreState.computedStates[0].state).toBe(1);
+      expect(liftedStoreState.committedState).toBe(1);
+      expect(liftedStoreState.currentStateIndex).toBe(3);
+
+      max = 3;
+      store.dispatch({ type: 'INCREMENT' });
+      liftedStoreState = store.liftedStore.getState();
+
+      expect(store.getState()).toBe(5);
+      expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
+      expect(liftedStoreState.stagedActionIds).toExclude(1);
+      expect(liftedStoreState.computedStates[0].state).toBe(3);
+      expect(liftedStoreState.committedState).toBe(3);
+      expect(liftedStoreState.currentStateIndex).toBe(2);
+
+      store.dispatch({ type: 'INCREMENT' });
+      liftedStoreState = store.liftedStore.getState();
+
+      expect(store.getState()).toBe(6);
+      expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
+      expect(liftedStoreState.stagedActionIds).toExclude(1);
+      expect(liftedStoreState.computedStates[0].state).toBe(4);
+      expect(liftedStoreState.committedState).toBe(4);
       expect(liftedStoreState.currentStateIndex).toBe(2);
     });
 

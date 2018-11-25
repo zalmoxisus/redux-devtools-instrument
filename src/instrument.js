@@ -353,8 +353,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           if (isPaused) return computePausedAction();
 
           // Auto-commit as new actions come in.
-          if (maxAge && stagedActionIds.length === maxAge) {
-            commitExcessActions(1);
+          if (maxAge && stagedActionIds.length >= maxAge) {
+            commitExcessActions(stagedActionIds.length - maxAge + 1);
           }
 
           if (currentStateIndex === stagedActionIds.length - 1) {
