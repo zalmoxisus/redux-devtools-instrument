@@ -309,6 +309,10 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
     // value whenever we feel like we don't have to recompute the states.
     let minInvalidatedStateIndex = 0;
 
+    // maxAge number can be changed dynamically
+    let maxAge = options.maxAge;
+    if (typeof maxAge === 'function') maxAge = maxAge(liftedAction);
+
     if (/^@@redux\/(INIT|REPLACE)/.test(liftedAction.type)) {
       if (options.shouldHotReload === false) {
         actionsById = { 0: liftAction(INIT_ACTION) };
@@ -324,7 +328,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
       // Recompute states on hot reload and init.
       minInvalidatedStateIndex = 0;
 
-      if (options.maxAge && stagedActionIds.length > options.maxAge) {
+      if (maxAge && stagedActionIds.length > maxAge) {
         // States must be recomputed before committing excess.
         computedStates = recomputeStates(
           computedStates,
@@ -337,7 +341,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           options.shouldCatchErrors
         );
 
-        commitExcessActions(stagedActionIds.length - options.maxAge);
+        commitExcessActions(stagedActionIds.length - maxAge);
 
         // Avoid double computation.
         minInvalidatedStateIndex = Infinity;
@@ -349,8 +353,8 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
           if (isPaused) return computePausedAction();
 
           // Auto-commit as new actions come in.
-          if (options.maxAge && stagedActionIds.length === options.maxAge) {
-            commitExcessActions(1);
+          if (maxAge && stagedActionIds.length >= maxAge) {
+            commitExcessActions(stagedActionIds.length - maxAge + 1);
           }
 
           if (currentStateIndex === stagedActionIds.length - 1) {
@@ -644,9 +648,7 @@ export function unliftStore(liftedStore, liftReducer, options) {
  * Redux instrumentation store enhancer.
  */
 export default function instrument(monitorReducer = () => null, options = {}) {
-  /* eslint-disable no-eq-null */
-  if (options.maxAge != null && options.maxAge < 2) {
-  /* eslint-enable */
+  if (typeof options.maxAge === 'number' && options.maxAge < 2) {
     throw new Error(
       'DevTools.instrument({ maxAge }) option, if specified, ' +
       'may not be less than 2.'
