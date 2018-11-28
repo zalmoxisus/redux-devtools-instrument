@@ -311,7 +311,7 @@ export function liftReducerWith(reducer, initialCommittedState, monitorReducer, 
 
     // maxAge number can be changed dynamically
     let maxAge = options.maxAge;
-    if (typeof maxAge === 'function') maxAge = maxAge(liftedAction);
+    if (typeof maxAge === 'function') maxAge = maxAge(liftedAction, liftedState);
 
     if (/^@@redux\/(INIT|REPLACE)/.test(liftedAction.type)) {
       if (options.shouldHotReload === false) {
