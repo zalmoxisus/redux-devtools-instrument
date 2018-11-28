@@ -44,7 +44,7 @@ export default function configureStore(initialState) {
 - arguments
   - **monitorReducer** *function* called whenever an action is dispatched ([see the example of a monitor reducer](https://github.com/gaearon/redux-devtools-log-monitor/blob/master/src/reducers.js#L13)).
   - **options** *object*
-    - **maxAge** *number* or *function* - maximum allowed actions to be stored on the history tree, the oldest actions are removed once `maxAge` is reached. Can be generated dynamically with a function getting current action as argument.
+    - **maxAge** *number* or *function*(currentLiftedAction, previousLiftedState) - maximum allowed actions to be stored on the history tree, the oldest actions are removed once `maxAge` is reached. Can be generated dynamically with a function getting current action as argument.
     - **shouldCatchErrors** *boolean* - if specified as `true`, whenever there's an exception in reducers, the monitors will show the error message, and next actions will not be dispatched.
     - **shouldRecordChanges** *boolean* - if specified as `false`, it will not record the changes till `pauseRecording(false)` is dispatched. Default is `true`.
     - **pauseActionType** *string* - if specified, whenever `pauseRecording(false)` lifted action is dispatched and there are actions in the history log, will add this action type. If not specified, will commit when paused.
