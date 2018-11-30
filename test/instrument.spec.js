@@ -612,11 +612,23 @@ describe('instrument', () => {
 
     it('should use dynamic maxAge', () => {
       let max = 3;
-      store = createStore(counter, instrument(undefined, { maxAge: () => max }));
+      const getMaxAge = expect.createSpy().andCall(() => max);
+      store = createStore(counter, instrument(undefined, { maxAge: getMaxAge }));
 
+      expect(getMaxAge.calls.length).toEqual(1);
       store.dispatch({ type: 'INCREMENT' });
+      expect(getMaxAge.calls.length).toEqual(2);
       store.dispatch({ type: 'INCREMENT' });
+      expect(getMaxAge.calls.length).toEqual(3);
       let liftedStoreState = store.liftedStore.getState();
+
+      expect(getMaxAge.calls[0].arguments[0].type).toInclude('INIT');
+      expect(getMaxAge.calls[0].arguments[1]).toBe(undefined);
+      expect(getMaxAge.calls[1].arguments[0].type).toBe('PERFORM_ACTION');
+      expect(getMaxAge.calls[1].arguments[1].nextActionId).toBe(1);
+      expect(getMaxAge.calls[1].arguments[1].stagedActionIds).toEqual([0]);
+      expect(getMaxAge.calls[2].arguments[1].nextActionId).toBe(2);
+      expect(getMaxAge.calls[2].arguments[1].stagedActionIds).toEqual([0,1]);
 
       expect(store.getState()).toBe(2);
       expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
