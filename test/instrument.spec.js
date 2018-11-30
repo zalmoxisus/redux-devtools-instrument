@@ -628,7 +628,7 @@ describe('instrument', () => {
       expect(getMaxAge.calls[1].arguments[1].nextActionId).toBe(1);
       expect(getMaxAge.calls[1].arguments[1].stagedActionIds).toEqual([0]);
       expect(getMaxAge.calls[2].arguments[1].nextActionId).toBe(2);
-      expect(getMaxAge.calls[2].arguments[1].stagedActionIds).toEqual([0,1]);
+      expect(getMaxAge.calls[2].arguments[1].stagedActionIds).toEqual([0, 1]);
 
       expect(store.getState()).toBe(2);
       expect(Object.keys(liftedStoreState.actionsById).length).toBe(3);
