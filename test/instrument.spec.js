@@ -743,7 +743,7 @@ describe('instrument', () => {
         expect(exportedState.actionsById[1].stack).toBeA('string');
         expect(exportedState.actionsById[1].stack).toContain('instrument.spec.js');
         expect(exportedState.actionsById[1].stack).toContain('/mocha/');
-        done()
+        done();
       });
     });
   });
