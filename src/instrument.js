@@ -23,7 +23,7 @@ export const ActionTypes = {
  * Action creators to change the History state.
  */
 export const ActionCreators = {
-  performAction(action, trace) {
+  performAction(action, trace, traceLimit, toExcludeFromTrace) {
     if (!isPlainObject(action)) {
       throw new Error(
         'Actions must be plain objects. ' +
@@ -40,8 +40,30 @@ export const ActionCreators = {
 
     let stack;
     if (trace) {
-      if (typeof trace === 'function') stack = trace(action);
-      else stack = Error().stack;
+      let extraFrames = 0;
+      if (typeof trace === 'function') {
+        stack = trace(action);
+      } else {
+        const error = Error();
+        let prevStackTraceLimit;
+        if (Error.captureStackTrace) {
+          if (Error.stackTraceLimit < traceLimit) {
+            prevStackTraceLimit = Error.stackTraceLimit;
+            Error.stackTraceLimit = traceLimit;
+          }
+          Error.captureStackTrace(error, toExcludeFromTrace);
+        } else {
+          extraFrames = 3;
+        }
+        stack = error.stack;
+        if (prevStackTraceLimit) Error.stackTraceLimit = prevStackTraceLimit;
+        if (extraFrames || typeof Error.stackTraceLimit !== 'number' || Error.stackTraceLimit > traceLimit) {
+          const frames = stack.split('\n');
+          if (frames.length > traceLimit) {
+            stack = frames.slice(0, traceLimit + extraFrames + (frames[0] === 'Error' ? 1 : 0)).join('\n');
+          }
+        }
+      }
     }
 
     return { type: ActionTypes.PERFORM_ACTION, action, timestamp: Date.now(), stack };
@@ -191,8 +213,8 @@ function recomputeStates(
 /**
  * Lifts an app's action into an action on the lifted store.
  */
-export function liftAction(action, trace) {
-  return ActionCreators.performAction(action, trace);
+export function liftAction(action, trace, traceLimit, toExcludeFromTrace) {
+  return ActionCreators.performAction(action, trace, traceLimit, toExcludeFromTrace);
 }
 
 /**
@@ -599,6 +621,7 @@ export function unliftState(liftedState) {
 export function unliftStore(liftedStore, liftReducer, options) {
   let lastDefinedState;
   const trace = options.trace || options.shouldIncludeCallstack;
+  const traceLimit = options.traceLimit || 10;
 
   function getState() {
     const state = unliftState(liftedStore.getState());
@@ -608,15 +631,17 @@ export function unliftStore(liftedStore, liftReducer, options) {
     return lastDefinedState;
   }
 
+  function dispatch(action) {
+    liftedStore.dispatch(liftAction(action, trace, traceLimit, dispatch));
+    return action;
+  }
+
   return {
     ...liftedStore,
 
     liftedStore,
 
-    dispatch(action) {
-      liftedStore.dispatch(liftAction(action, trace));
-      return action;
-    },
+    dispatch,
 
     getState,
 
