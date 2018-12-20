@@ -1,6 +1,8 @@
 Redux DevTools Instrumentation
 ==============================
 
+> This package was merged into [`redux-devtools`](https://github.com/reduxjs/redux-devtools) monorepo. Please refer to that repository for the latest updates, issues and pull requests.
+
 Redux enhancer used along with [Redux DevTools](https://github.com/reduxjs/redux-devtools) or [Remote Redux DevTools](https://github.com/zalmoxisus/remote-redux-devtools).
 
 ### Installation
@@ -23,7 +25,7 @@ import reducer from '../reducers';
 
 // Usually you import the reducer from the monitor
 // or apply with createDevTools as explained in Redux DevTools
-const monitorReducer = (state = {}, action) => state; 
+const monitorReducer = (state = {}, action) => state;
 
 export default function configureStore(initialState) {
   const enhancer = compose(
@@ -31,7 +33,7 @@ export default function configureStore(initialState) {
     // other enhancers and applyMiddleware should be added before the instrumentation
     instrument(monitorReducer, { maxAge: 50 })
   );
-  
+
   // Note: passing enhancer as last argument requires redux@>=3.1.0
   return createStore(reducer, initialState, enhancer);
 }
